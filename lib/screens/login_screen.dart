@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _codigoController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController(); // Cambiado de _codigoController
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
   bool _isLoading = false;
@@ -21,21 +21,23 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      String codigo = _codigoController.text;
-      String password = _passwordController.text;
 
       try {
-        bool isAuthenticated = await _authService.authenticate(codigo, password);
+        bool isAuthenticated = await _authService.login(
+          _emailController.text,
+          _passwordController.text,
+        );
+
         if (isAuthenticated) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
-          _showErrorDialog('Código o contraseña incorrectos.');
+          _showErrorDialog('Email o contraseña incorrectos');
         }
       } catch (e) {
-        _showErrorDialog('Ocurrió un error al intentar iniciar sesión.');
+        _showErrorDialog('Error de conexión: ${e.toString()}');
       } finally {
         setState(() => _isLoading = false);
       }
@@ -71,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 20), // Espacio después del AppBar
+              const SizedBox(height: 20),
               Image.asset('assets/cutcitos.png', height: 150),
               const SizedBox(height: 20),
               const Text(
@@ -91,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Padding(
                       padding: EdgeInsets.only(left: 8.0),
                       child: Text(
-                        'Código o Correo',
+                        'Correo Electrónico', // Cambiado de 'Código o Correo'
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
@@ -101,17 +103,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
-                      controller: _codigoController,
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress, // Teclado optimizado para email
                       decoration: InputDecoration(
-                        hintText: 'Ingresa tu código o correo',
+                        hintText: 'Ingresa tu correo electrónico',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 16),
                       ),
-                      validator: (value) =>
-                      value!.isEmpty ? 'Ingresa tu código o correo' : null,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Ingresa tu correo';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Correo no válido';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     const Padding(

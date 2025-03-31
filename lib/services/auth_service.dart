@@ -1,10 +1,22 @@
+import 'api_service.dart';
+
 class AuthService {
-  // Simula la autenticación (en la vida real usarías una API)
-  Future<bool> authenticate(String username, String password) async {
-    await Future.delayed(const Duration(seconds: 1)); // Simula tiempo de red
-    return username == 'user' && password == 'password';
+  // Login
+  Future<bool> login(String email, String password) async {
+    final response = await ApiService.post('auth/login', {
+      'email': email,
+      'password': password,
+    });
+
+    if (response.statusCode == 200) {
+      // Guardar token si es necesario
+      // Ejemplo: await SecureStorage.saveToken(response.body['token']);
+      return true;
+    }
+    return false;
   }
 
+  // Registro
   Future<bool> register({
     required String codigo,
     required String password,
@@ -13,44 +25,24 @@ class AuthService {
     required String telefono,
     required String email,
   }) async {
-    await Future.delayed(const Duration(seconds: 1));
+    final response = await ApiService.post('auth/register', {
+      'codigo_UDG': codigo,
+      'password': password,
+      'nombre': nombre,
+      'rol': rol,
+      'telefono': telefono,
+      'email': email,
+    });
 
-    if (codigo.isEmpty || password.isEmpty || nombre.isEmpty ||
-        rol.isEmpty || telefono.isEmpty || email.isEmpty) {
-      return false;
-    }
-
-    return true;
+    return response.statusCode == 201;
   }
 
-  // Versión alternativa si prefieres mantener compatibilidad
-  Future<bool> registerLegacy(String username, String password) async {
-    return register(
-      codigo: username,
-      password: password,
-      nombre: '',
-      rol: '',
-      telefono: '',
-      email: '',
-    );
-  }
-
-  // Método para recuperación de contraseña (versión simulada)
+  // Recuperación de contraseña
   Future<bool> resetPassword(String email) async {
-    // Simula tiempo de red
-    await Future.delayed(const Duration(seconds: 1));
+    final response = await ApiService.post('auth/forgot-password', {
+      'email': email,
+    });
 
-    // Validación básica del formato de email
-    if (!email.contains('@') || !email.contains('.')) {
-      return false;
-    }
-
-    // Simulación: siempre devuelve true si el email tiene formato válido
-    return true;
-
-    // En una implementación real aquí harías:
-    // 1. Verificación en tu base de datos
-    // 2. Envío de email con enlace de recuperación
-    // 3. Registro del intento en tu sistema
+    return response.statusCode == 200;
   }
 }
