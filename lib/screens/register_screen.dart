@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
-import 'home_screen.dart';
+import 'sellers_list.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -43,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         if (isRegistered) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomeScreen()),
+            MaterialPageRoute(builder: (context) => const SellersList()),
           );
         } else {
           _showErrorDialog('Hubo un problema al registrar el usuario.');

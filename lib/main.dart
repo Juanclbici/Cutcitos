@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/sellers_list.dart';
 
 Future<void> main() async {
   // Carga las variables de entorno ANTES de iniciar la app
@@ -24,7 +24,7 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
+        '/home': (context) => const SellersList(),
       },
       debugShowCheckedModeBanner: false,
     );
