@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl_phone_field/intl_phone_field.dart';
 import '../../services/auth_service.dart';
 import '../sellers/sellers_list.dart';
-import 'package:intl_phone_field/intl_phone_field.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,8 +19,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   String? _selectedRole;
-  final List<String> _roles = ["Vendedor", "Consumidor"];
   String? _completePhoneNumber;
+
+  // Mapeo de roles (visualización en español -> valor para backend en inglés)
+  final Map<String, String> _roleMapping = {
+    "Vendedor": "seller",
+    "Consumidor": "buyer"
+  };
+
+  // Lista de roles para mostrar en el dropdown (solo las keys en español)
+  List<String> get _roles => _roleMapping.keys.toList();
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
@@ -33,7 +41,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           codigo: _codigoController.text,
           password: _passwordController.text,
           nombre: _nombreController.text,
-          rol: _selectedRole ?? "",
+          rol: _roleMapping[_selectedRole] ?? "", // Usamos el mapeo aquí
           telefono: _completePhoneNumber ?? "",
           email: _emailController.text,
         );
@@ -98,7 +106,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 10), // Espacio después del AppBar
+              const SizedBox(height: 10),
               _buildInputField("Nombre", "Ingrese su nombre completo", _nombreController),
               _buildInputField("Código", "Ingrese su código", _codigoController),
 
@@ -124,18 +132,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Campo de teléfono
+              // Campo de teléfono con formato MX y 10 dígitos
               const Text('Teléfono', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.teal)),
               const SizedBox(height: 8),
               IntlPhoneField(
                 decoration: _inputDecoration(hintText: 'Ingrese su teléfono'),
                 initialCountryCode: 'MX',
                 onChanged: (phone) {
-                  _completePhoneNumber = phone.completeNumber;
+                  // Elimina el +52 y guarda solo los 10 dígitos
+                  final fullNumber = phone.completeNumber;
+                  _completePhoneNumber = fullNumber.replaceFirst(RegExp(r'^\+\d{2}'), '');
+                  print("Número guardado: $_completePhoneNumber"); // Para debug
                 },
                 validator: (phone) {
                   if (phone?.number == null || phone!.number.isEmpty) {
                     return 'Ingrese su teléfono';
+                  }
+                  if (phone.number.length != 10) {
+                    return 'Debe tener 10 dígitos (sin lada)';
                   }
                   return null;
                 },
