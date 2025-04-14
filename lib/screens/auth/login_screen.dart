@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import 'sellers_list.dart';
+import '../../services/auth_service.dart';
+import '../sellers/sellers_list.dart';
 import 'register_screen.dart';
 import 'password_screen.dart';
 

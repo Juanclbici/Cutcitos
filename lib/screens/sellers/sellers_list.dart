@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/SellerData.dart';
+import '../../models/SellerData.dart';
 import 'seller_screen.dart';
-import 'info_profile.dart';
-import 'messages_screen.dart';
+import '../user/info_profile.dart';
+import '../user/messages_screen.dart';
+import '../../services/category_service.dart';
+import '../../models/category.dart';
 
 class SellersList extends StatefulWidget {
   const SellersList({super.key});
@@ -15,18 +17,18 @@ class _SellersListState extends State<SellersList> {
   final SellerData _sellerData = SellerData();
   List<Seller> _sellers = [];
   bool _isLoading = true;
-  int _selectedIndex = 0; // Boton de Navegacion
+  int _selectedIndex = 0;
 
-  // Category list
-  final List<String> _categories = [
-    'Todos', 'Snacks', 'Comida', 'Bebidas', 'Postres', 'Saludable'
-  ];
+  // Categorías modificadas
+  List<Category> _categories = [];
+  bool _isLoadingCategories = true;
   String _selectedCategory = 'Todos';
 
   @override
   void initState() {
     super.initState();
     _loadSellers();
+    _loadCategories(); // Nueva carga de categorías
   }
 
   Future<void> _loadSellers() async {
@@ -43,6 +45,32 @@ class _SellersListState extends State<SellersList> {
     }
   }
 
+  // Nuevo método para cargar categorías
+  Future<void> _loadCategories() async {
+    try {
+      print("Cargando categorías...");
+      final categories = await CategoryService.getAllCategories();
+      print("Categorías obtenidas: ${categories.length}");
+
+      setState(() {
+        _categories = categories;
+        _isLoadingCategories = false;
+      });
+
+      print("Estado actualizado con categorías");
+    } catch (e) {
+      print("Error cargando categorías: $e");
+      setState(() {
+        _isLoadingCategories = false;
+      });
+
+      // Muestra el error al usuario
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error cargando categorías: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,11 +79,11 @@ class _SellersListState extends State<SellersList> {
         backgroundColor: Colors.cyan,
       ),
 
-      body: _isLoading
+      body: _isLoading || _isLoadingCategories
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          // --- SEARCH BAR WIDGET ---
+          // --- SEARCH BAR WIDGET --- (Mantengo igual)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
@@ -73,29 +101,54 @@ class _SellersListState extends State<SellersList> {
             ),
           ),
 
-          // --- CATEGORIES WIDGET ---
+          // --- CATEGORIES WIDGET MODIFICADO ---
           Container(
             height: 50,
             margin: const EdgeInsets.only(bottom: 8),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: _categories.length,
+              itemCount: _categories.length + 1, // +1 para "Todos"
               itemBuilder: (context, index) {
+                // Primera opción es "Todos"
+                if (index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: ChoiceChip(
+                      label: const Text('Todos'),
+                      selected: _selectedCategory == 'Todos',
+                      onSelected: (selected) {
+                        setState(() {
+                          _selectedCategory = 'Todos';
+                        });
+                      },
+                      backgroundColor: Colors.grey.shade200,
+                      selectedColor: Colors.cyan.shade100,
+                      labelStyle: TextStyle(
+                        color: _selectedCategory == 'Todos'
+                            ? Colors.cyan.shade700
+                            : Colors.black87,
+                      ),
+                    ),
+                  );
+                }
+
+                // Resto de categorías del backend
+                final category = _categories[index - 1];
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: ChoiceChip(
-                    label: Text(_categories[index]),
-                    selected: _selectedCategory == _categories[index],
+                    label: Text(category.name),
+                    selected: _selectedCategory == category.name,
                     onSelected: (selected) {
                       setState(() {
-                        _selectedCategory = _categories[index];
+                        _selectedCategory = category.name;
                       });
                     },
                     backgroundColor: Colors.grey.shade200,
                     selectedColor: Colors.cyan.shade100,
                     labelStyle: TextStyle(
-                      color: _selectedCategory == _categories[index]
+                      color: _selectedCategory == category.name
                           ? Colors.cyan.shade700
                           : Colors.black87,
                     ),
@@ -105,15 +158,13 @@ class _SellersListState extends State<SellersList> {
             ),
           ),
 
-          // --- SELLERS LIST WIDGET ---
+          // --- SELLERS LIST WIDGET --- (Mantengo igual)
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _sellers.length,
               itemBuilder: (context, index) {
                 final seller = _sellers[index];
-
-                // --- SELLER CARD WIDGET ---
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
                   shape: RoundedRectangleBorder(
@@ -130,7 +181,6 @@ class _SellersListState extends State<SellersList> {
                     },
                     child: Column(
                       children: [
-                        // --- SELLER COVER IMAGE ---
                         Container(
                           height: 120,
                           decoration: BoxDecoration(
@@ -142,8 +192,6 @@ class _SellersListState extends State<SellersList> {
                             ),
                           ),
                         ),
-
-                        // --- SELLER INFO SECTION ---
                         Padding(
                           padding: const EdgeInsets.all(16),
                           child: Row(
@@ -190,19 +238,18 @@ class _SellersListState extends State<SellersList> {
         ],
       ),
 
-      // --- BOTTOM NAVIGATION BAR WIDGET ---
-
+      // --- BOTTOM NAVIGATION BAR WIDGET --- (Mantengo igual)
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
-          if (index == 1) { // Messages tab
+          if (index == 1) {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => const MessagesScreen(),
               ),
             );
-          } else if (index == 3) { // Profile tab
+          } else if (index == 3) {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -215,7 +262,6 @@ class _SellersListState extends State<SellersList> {
             });
           }
         },
-
         type: BottomNavigationBarType.fixed,
         selectedItemColor: Colors.cyan,
         unselectedItemColor: Colors.grey,

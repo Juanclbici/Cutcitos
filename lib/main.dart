@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/login_screen.dart';
-import 'screens/sellers_list.dart';
+import 'screens/auth/login_screen.dart';
+import 'screens/sellers/sellers_list.dart';
 
 Future<void> main() async {
   // Carga las variables de entorno ANTES de iniciar la app

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/UserData.dart';
+import '../../models/UserData.dart';
 import 'package:intl/intl.dart';
 import 'messages_screen.dart';
 

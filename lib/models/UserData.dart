@@ -50,7 +50,7 @@ class UserData {
     email: 'juan.perez@alumnos.udg.mx',
     rol: 'usuario',
     fechaRegistro: DateTime(2023, 9, 15),
-    fotoPerfil: 'assets/profile.jpg',
+    fotoPerfil: 'assets/images/profile.jpg',
     telefono: '33-1234-5678',
     estadoCuenta: 'activo',
     codigoUDG: '123456789',

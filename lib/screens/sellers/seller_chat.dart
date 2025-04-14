@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:palette_generator/palette_generator.dart';
-import '../models/SellerData.dart';
+import '../../models/SellerData.dart';
 
 class SellerChatScreen extends StatefulWidget {
   final String sellerName;

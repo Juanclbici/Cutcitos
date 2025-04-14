@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../models/SellerData.dart';
+import '../../models/SellerData.dart';
 import 'info_profile.dart';
-import 'sellers_list.dart';
-import 'seller_chat.dart';
+import '../sellers/sellers_list.dart';
+import '../sellers/seller_chat.dart';
 
 // First class - MessagesScreen
 class MessagesScreen extends StatefulWidget {

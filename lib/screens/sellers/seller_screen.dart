@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'seller_chat.dart';
-import '../models/SellerData.dart';
+import '../../models/SellerData.dart';
 
 class SellerScreen extends StatefulWidget {
   final Seller seller;
