@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../models/SellerData.dart';
+import '../../models/category.dart';
+import '../../models/product.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'seller_screen.dart';
 import '../user/info_profile.dart';
 import '../user/messages_screen.dart';
 import '../../services/category_service.dart';
-import '../../models/category.dart';
+import '../../services/product_service.dart';
+import '../../widgets/product_image.dart';
 
 class SellersList extends StatefulWidget {
   const SellersList({super.key});
@@ -14,59 +17,80 @@ class SellersList extends StatefulWidget {
 }
 
 class _SellersListState extends State<SellersList> {
-  final SellerData _sellerData = SellerData();
-  List<Seller> _sellers = [];
   bool _isLoading = true;
   int _selectedIndex = 0;
-
-  // Categorías modificadas
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
   String _selectedCategory = 'Todos';
+  List<Product> _products = [];
+  bool _isLoadingProducts = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _loadSellers();
-    _loadCategories(); // Nueva carga de categorías
+    _loadCategories();
+    _loadAllProducts();
   }
 
-  Future<void> _loadSellers() async {
-    try {
-      final sellers = await _sellerData.getSellers();
-      setState(() {
-        _sellers = sellers;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  // Nuevo método para cargar categorías
   Future<void> _loadCategories() async {
     try {
-      print("Cargando categorías...");
       final categories = await CategoryService.getAllCategories();
-      print("Categorías obtenidas: ${categories.length}");
-
       setState(() {
         _categories = categories;
         _isLoadingCategories = false;
       });
-
-      print("Estado actualizado con categorías");
     } catch (e) {
-      print("Error cargando categorías: $e");
       setState(() {
         _isLoadingCategories = false;
       });
-
-      // Muestra el error al usuario
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error cargando categorías: $e")),
+      );
+    }
+  }
+
+  Future<void> _loadAllProducts() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _isLoadingProducts = true;
+      });
+
+      final products = await ProductService.getAllProducts();
+
+      // Verifica los productos recibidos
+      print('Productos para mostrar: ${products.length}');
+
+      setState(() {
+        _products = products;
+        _isLoading = false;
+        _isLoadingProducts = false;
+      });
+
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _isLoadingProducts = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _loadProductsByCategory(int categoryId) async {
+    try {
+      setState(() => _isLoadingProducts = true);
+      final products = await ProductService.getProductsByCategory(categoryId);
+      setState(() {
+        _products = products;
+        _isLoadingProducts = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingProducts = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
       );
     }
   }
@@ -75,15 +99,14 @@ class _SellersListState extends State<SellersList> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Vendedores"),
+        title: const Text("Productos"),
         backgroundColor: Colors.cyan,
       ),
-
       body: _isLoading || _isLoadingCategories
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          // --- SEARCH BAR WIDGET --- (Mantengo igual)
+          // Search Bar (se mantiene igual)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
@@ -101,16 +124,15 @@ class _SellersListState extends State<SellersList> {
             ),
           ),
 
-          // --- CATEGORIES WIDGET MODIFICADO ---
+          // Categorías (se mantiene igual)
           Container(
             height: 50,
             margin: const EdgeInsets.only(bottom: 8),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: _categories.length + 1, // +1 para "Todos"
+              itemCount: _categories.length + 1,
               itemBuilder: (context, index) {
-                // Primera opción es "Todos"
                 if (index == 0) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -121,6 +143,7 @@ class _SellersListState extends State<SellersList> {
                         setState(() {
                           _selectedCategory = 'Todos';
                         });
+                        _loadAllProducts();
                       },
                       backgroundColor: Colors.grey.shade200,
                       selectedColor: Colors.cyan.shade100,
@@ -133,7 +156,6 @@ class _SellersListState extends State<SellersList> {
                   );
                 }
 
-                // Resto de categorías del backend
                 final category = _categories[index - 1];
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -144,6 +166,7 @@ class _SellersListState extends State<SellersList> {
                       setState(() {
                         _selectedCategory = category.name;
                       });
+                      _loadProductsByCategory(category.id);
                     },
                     backgroundColor: Colors.grey.shade200,
                     selectedColor: Colors.cyan.shade100,
@@ -158,13 +181,17 @@ class _SellersListState extends State<SellersList> {
             ),
           ),
 
-          // --- SELLERS LIST WIDGET --- (Mantengo igual)
+          // Lista de Productos (nueva implementación)
           Expanded(
-            child: ListView.builder(
+            child: _isLoadingProducts
+                ? const Center(child: CircularProgressIndicator())
+                : _products.isEmpty
+                ? const Center(child: Text("No hay productos disponibles"))
+                : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _sellers.length,
+              itemCount: _products.length,
               itemBuilder: (context, index) {
-                final seller = _sellers[index];
+                final product = _products[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
                   shape: RoundedRectangleBorder(
@@ -172,63 +199,65 @@ class _SellersListState extends State<SellersList> {
                   elevation: 3,
                   child: InkWell(
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SellerScreen(seller: seller),
-                        ),
-                      );
+                      // Aquí puedes navegar a la pantalla de detalle del producto
                     },
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 120,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(12)),
-                            image: DecorationImage(
-                              image: AssetImage(seller.coverImage),
-                              fit: BoxFit.cover,
-                            ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ProductImage(
+                            imagePath: product.image,
+                            width: 100,
+                            height: 100,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundImage: AssetImage(seller.profileImage),
-                                radius: 25,
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  product.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  product.description ?? '',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      seller.name,
+                                      '\$${product.price.toStringAsFixed(2)}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        fontSize: 18,
+                                        fontSize: 16,
+                                        color: Colors.cyan,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        const Icon(Icons.star,
-                                            color: Colors.cyan, size: 16),
-                                        const SizedBox(width: 4),
-                                        Text(seller.rating.toString()),
-                                      ],
+                                    Text(
+                                      'Disponibles: ${product.availableQuantity}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const Icon(Icons.arrow_forward_ios, size: 16),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -237,8 +266,6 @@ class _SellersListState extends State<SellersList> {
           ),
         ],
       ),
-
-      // --- BOTTOM NAVIGATION BAR WIDGET --- (Mantengo igual)
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {

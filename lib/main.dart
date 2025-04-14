@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/sellers/sellers_list.dart';
+import 'services/api_service.dart';
 
 Future<void> main() async {
   // Carga las variables de entorno ANTES de iniciar la app
   await dotenv.load(fileName: ".env");
-
+  await ApiService.initialize();
   runApp(const MyApp());
 }
 

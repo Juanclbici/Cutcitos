@@ -1,19 +1,25 @@
 import 'api_service.dart';
+import 'dart:convert';
 
 class AuthService {
   // Login
-  Future<bool> login(String email, String password) async {
-    final response = await ApiService.post('auth/login', {
-      'email': email,
-      'password': password,
-    });
+  Future<bool> login(String email, String password) async {  // Cambia de void a bool
+    try {
+      final response = await ApiService.post('auth/login', {
+        'email': email,
+        'password': password,
+      });
 
-    if (response.statusCode == 200) {
-      // Guardar token si es necesario
-      // Ejemplo: await SecureStorage.saveToken(response.body['token']);
-      return true;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        await ApiService.setToken(data['token']);
+        return true;  // Devuelve true si el login es exitoso
+      }
+      return false;  // Devuelve false si falla
+    } catch (e) {
+      print('Error en login: $e');
+      rethrow;
     }
-    return false;
   }
 
   // Registro
