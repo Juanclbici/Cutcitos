@@ -8,6 +8,8 @@ import '../user/messages_screen.dart';
 import '../../services/category_service.dart';
 import '../../services/product_service.dart';
 import '../../widgets/product_image.dart';
+import '../../services/cart_service.dart';
+import '../cart/car_screen.dart'; // al crear la carpeta cart/
 
 class SellersList extends StatefulWidget {
   const SellersList({super.key});
@@ -245,11 +247,25 @@ class _SellersListState extends State<SellersList> {
                                         color: Colors.cyan,
                                       ),
                                     ),
-                                    Text(
-                                      'Disponibles: ${product.availableQuantity}',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          'Disponibles: ${product.availableQuantity}',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          icon: const Icon(Icons.add_shopping_cart, color: Colors.cyan),
+                                          onPressed: () {
+                                            CartService.addToCart(product);
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text('${product.name} agregado al carrito')),
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -275,6 +291,11 @@ class _SellersListState extends State<SellersList> {
               MaterialPageRoute(
                 builder: (context) => const MessagesScreen(),
               ),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CarScreen()),
             );
           } else if (index == 3) {
             Navigator.push(

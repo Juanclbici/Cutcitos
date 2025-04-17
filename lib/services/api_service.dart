@@ -84,4 +84,47 @@ class ApiService {
       throw Exception('Error de autenticación: ${response.statusCode}');
     }
   }
+
+  // Método genérico para DELETE
+  static Future<http.Response> delete(String endpoint) async {
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+        if (_token != null) 'Authorization': 'Bearer $_token',
+      };
+
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/$endpoint'),
+        headers: headers,
+      );
+
+      _checkAuthError(response);
+      return response;
+    } catch (e) {
+      print('Error en DELETE $endpoint: $e');
+      rethrow;
+    }
+  }
+
+  // Método PUT genérico
+  static Future<http.Response> put(String endpoint) async {
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+        if (_token != null) 'Authorization': 'Bearer $_token',
+      };
+
+      final response = await http.put(
+        Uri.parse('$_baseUrl/$endpoint'),
+        headers: headers,
+      );
+
+      _checkAuthError(response);
+      return response;
+    } catch (e) {
+      print('Error en PUT $endpoint: $e');
+      rethrow;
+    }
+  }
+
 }
