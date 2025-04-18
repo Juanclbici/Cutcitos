@@ -6,6 +6,8 @@ import 'messages_screen.dart';
 import '../cart/car_screen.dart';
 import '../sellers/sellers_list.dart';
 import '../orders/pending_orders_screen.dart';
+import '../../widgets/custom_navbar.dart';
+import '../../widgets/custom_drawer.dart';
 
 class InfoProfile extends StatefulWidget {
   const InfoProfile({super.key});
@@ -46,8 +48,9 @@ class _InfoProfileState extends State<InfoProfile> {
       appBar: AppBar(
         title: const Text('Mi Perfil'),
         backgroundColor: Colors.cyan,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
       ),
+      drawer: const CustomDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _user == null
@@ -143,61 +146,7 @@ class _InfoProfileState extends State<InfoProfile> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (index == 0) { // Home tab
-            Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SellersList())
-            );
-          } if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MessagesScreen(),
-              ),
-            );
-          }else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CarScreen()),
-            );
-          } else if (index == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PendingOrdersScreen(),
-              ),
-            );
-          }else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.cyan,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Mensajes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Carrito',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Pedidos',
-          ),
-        ],
-      ),
+      bottomNavigationBar: const CustomNavigationBar(selectedIndex: -1),
     );
   }
 

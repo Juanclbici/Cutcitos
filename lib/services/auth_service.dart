@@ -1,5 +1,7 @@
 import 'api_service.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'user_service.dart';
 
 class AuthService {
   // Login
@@ -13,6 +15,12 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         await ApiService.setToken(data['token']);
+
+        // Obtener usuario y guardar rol
+        final user = await UserService.getCurrentUser();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('rol', user.rol);
+
         return true;  // Devuelve true si el login es exitoso
       }
       return false;  // Devuelve false si falla

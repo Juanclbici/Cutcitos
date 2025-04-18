@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../models/category.dart';
 import '../../models/product.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'seller_screen.dart';
 import '../user/info_profile.dart';
-import '../user/messages_screen.dart';
 import '../../services/category_service.dart';
 import '../../services/product_service.dart';
 import '../../widgets/product_image.dart';
 import '../../services/cart_service.dart';
-import '../cart/car_screen.dart';
-import '../orders/pending_orders_screen.dart';
+import '../../widgets/custom_navbar.dart';
+import '../../widgets/custom_drawer.dart';
 
 class SellersList extends StatefulWidget {
   const SellersList({super.key});
@@ -21,13 +18,11 @@ class SellersList extends StatefulWidget {
 
 class _SellersListState extends State<SellersList> {
   bool _isLoading = true;
-  int _selectedIndex = 0;
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
   String _selectedCategory = 'Todos';
   List<Product> _products = [];
   bool _isLoadingProducts = true;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -104,19 +99,9 @@ class _SellersListState extends State<SellersList> {
       appBar: AppBar(
         title: const Text("Productos"),
         backgroundColor: Colors.cyan,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const InfoProfile()),
-              );
-            },
-          )
-        ],
+        automaticallyImplyLeading: true,
       ),
+      drawer: const CustomDrawer(),
       body: _isLoading || _isLoadingCategories
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -295,56 +280,7 @@ class _SellersListState extends State<SellersList> {
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MessagesScreen(),
-              ),
-            );
-          } else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CarScreen()),
-            );
-          } else if (index == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PendingOrdersScreen(),
-              ),
-            );
-          } else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.cyan,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Mensajes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Carrito',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Pedidos',
-          ),
-        ],
-      ),
+      bottomNavigationBar: const CustomNavigationBar(selectedIndex: 0),
     );
   }
 }

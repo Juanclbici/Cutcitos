@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/order.dart';
 import '../../services/order_service.dart';
+import '../../widgets/status_chip.dart';
+import '../../widgets/custom_navbar.dart';
+import '../../widgets/custom_drawer.dart';
 
 class VendorOrdersScreen extends StatefulWidget {
   const VendorOrdersScreen({super.key});
@@ -9,13 +12,16 @@ class VendorOrdersScreen extends StatefulWidget {
   State<VendorOrdersScreen> createState() => _VendorOrdersScreenState();
 }
 
-class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
-  List<Order> _orders = [];
+class _VendorOrdersScreenState extends State<VendorOrdersScreen>
+    with SingleTickerProviderStateMixin {
+  List<Order> _allOrders = [];
   bool _isLoading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadVendorOrders();
   }
 
@@ -24,12 +30,27 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
     try {
       final data = await OrderService.getOrdersBySeller();
       setState(() {
-        _orders = data;
+        _allOrders = data;
         _isLoading = false;
       });
     } catch (e) {
       print('Error al obtener pedidos del vendedor: $e');
       setState(() => _isLoading = false);
+    }
+  }
+
+  List<Order> _filterOrders(String categoria) {
+    switch (categoria) {
+      case 'pendiente':
+        return _allOrders
+            .where((o) => o.estado == 'pendiente' || o.estado == 'confirmado')
+            .toList();
+      case 'entregado':
+        return _allOrders.where((o) => o.estado == 'entregado').toList();
+      case 'cancelado':
+        return _allOrders.where((o) => o.estado == 'cancelado').toList();
+      default:
+        return [];
     }
   }
 
@@ -71,95 +92,137 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final categorias = ['pendiente', 'entregado', 'cancelado'];
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mis Pedidos (Vendedor)'),
-        backgroundColor: Colors.teal,
+        title: const Text('Mis Pedidos'),
+        backgroundColor: Colors.cyan,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Pendientes'),
+            Tab(text: 'Entregados'),
+            Tab(text: 'Cancelados'),
+          ],
+        ),
       ),
+      drawer: const CustomDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _orders.isEmpty
-          ? const Center(child: Text('No hay pedidos aún'))
-          : ListView.builder(
-        itemCount: _orders.length,
-        itemBuilder: (context, index) {
-          final pedido = _orders[index];
-          final estado = pedido.estado;
+          : TabBarView(
+        controller: _tabController,
+        children: categorias.map((categoria) {
+          final pedidos = _filterOrders(categoria);
+          return pedidos.isEmpty
+              ? const Center(child: Text('No hay pedidos en esta categoría'))
+              : ListView.builder(
+            itemCount: pedidos.length,
+            itemBuilder: (context, index) {
+              final pedido = pedidos[index];
+              final estado = pedido.estado;
 
-          return Card(
-            margin: const EdgeInsets.all(10),
-            elevation: 4,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Pedido #${pedido.id}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text('Estado: $estado'),
-                  const SizedBox(height: 6),
-                  ...pedido.productos.map((producto) => ListTile(
-                    leading: Image.asset(
-                      producto.image,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
-                    ),
-                    title: Text(producto.name),
-                    subtitle: Text('Cantidad: ${producto.availableQuantity}'),
-                    trailing: Text('\$${producto.price.toStringAsFixed(2)}'),
-                  )),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      'Total: \$${pedido.total.toStringAsFixed(2)}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+              return Card(
+                margin: const EdgeInsets.all(10),
+                elevation: 3,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('Estado: '),
+                          StatusChip(estado: pedido.estado),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ...pedido.productos.map((producto) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                              color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: ListTile(
+                          leading: Image.asset(
+                            producto.image,
+                            width: 50,
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.image_not_supported),
+                          ),
+                          title: Text(producto.name),
+                          subtitle: Text(
+                              'Cantidad: ${producto.availableQuantity}'),
+                          trailing: Text(
+                              '\$${producto.price.toStringAsFixed(2)}'),
+                        ),
+                      )),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          'Total: \$${pedido.total.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (estado == 'pendiente')
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () =>
+                                  _confirmarPedido(pedido.id),
+                              icon: const Icon(Icons.check),
+                              label: const Text('Confirmar'),
+                            ),
+                            const SizedBox(width: 10),
+                            TextButton.icon(
+                              onPressed: () =>
+                                  _cancelarPedido(pedido.id),
+                              icon: const Icon(Icons.cancel),
+                              label: const Text('Cancelar'),
+                              style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red),
+                            ),
+                          ],
+                        )
+                      else if (estado == 'confirmado')
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () =>
+                                  _entregarPedido(pedido.id),
+                              icon:
+                              const Icon(Icons.local_shipping),
+                              label: const Text('Entregar'),
+                            ),
+                            const SizedBox(width: 10),
+                            TextButton.icon(
+                              onPressed: () =>
+                                  _cancelarPedido(pedido.id),
+                              icon: const Icon(Icons.cancel),
+                              label: const Text('Cancelar'),
+                              style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  if (estado == 'pendiente')
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () => _confirmarPedido(pedido.id),
-                          icon: const Icon(Icons.check),
-                          label: const Text('Confirmar'),
-                        ),
-                        const SizedBox(width: 10),
-                        TextButton.icon(
-                          onPressed: () => _cancelarPedido(pedido.id),
-                          icon: const Icon(Icons.cancel),
-                          label: const Text('Cancelar'),
-                          style: TextButton.styleFrom(foregroundColor: Colors.red),
-                        ),
-                      ],
-                    )
-                  else if (estado == 'confirmado')
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () => _entregarPedido(pedido.id),
-                          icon: const Icon(Icons.local_shipping),
-                          label: const Text('Entregar'),
-                        ),
-                        const SizedBox(width: 10),
-                        TextButton.icon(
-                          onPressed: () => _cancelarPedido(pedido.id),
-                          icon: const Icon(Icons.cancel),
-                          label: const Text('Cancelar'),
-                          style: TextButton.styleFrom(foregroundColor: Colors.red),
-                        ),
-                      ],
-                    )
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
-        },
+        }).toList(),
       ),
+      bottomNavigationBar: const CustomNavigationBar(selectedIndex: -1),
     );
   }
 }

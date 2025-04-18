@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import '../../services/cart_service.dart';
 import '../../services/seller_service.dart';
 import '../../services/order_service.dart';
-import '../../models/product.dart';
-import '../user/info_profile.dart';
-import '../user/messages_screen.dart';
-import '../sellers/sellers_list.dart';
-import '../orders/pending_orders_screen.dart';
+import '../../widgets/custom_navbar.dart';
+import '../../widgets/custom_drawer.dart';
 
 class CarScreen extends StatefulWidget {
   const CarScreen({super.key});
@@ -102,19 +99,9 @@ class _CarScreenState extends State<CarScreen> {
       appBar: AppBar(
         title: const Text('Carrito de Compras'),
         backgroundColor: Colors.cyan,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const InfoProfile()),
-              );
-            },
-          )
-        ],
+        automaticallyImplyLeading: true,
       ),
+      drawer: const CustomDrawer(),
       body: _loadingSellers
           ? const Center(child: CircularProgressIndicator())
           : cartGrouped.isEmpty
@@ -200,56 +187,7 @@ class _CarScreenState extends State<CarScreen> {
           );
         }).toList(),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (index == 0) { // Home tab
-            Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SellersList())
-            );
-          } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MessagesScreen(),
-              ),
-            );
-          } else if (index == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PendingOrdersScreen(),
-              ),
-            );
-          } else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.cyan,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Mensajes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Carrito',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Pedidos',
-          ),
-        ],
-      ),
+      bottomNavigationBar: const CustomNavigationBar(selectedIndex: 2),
     );
   }
 }

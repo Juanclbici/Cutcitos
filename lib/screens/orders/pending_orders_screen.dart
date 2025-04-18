@@ -1,12 +1,10 @@
-// Reemplaza todo tu archivo actual con este:
-
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/order.dart';
 import '../../services/order_service.dart';
-import '../cart/car_screen.dart';
-import '../sellers/sellers_list.dart';
-import '../user/info_profile.dart';
-import '../user/messages_screen.dart';
+import '../../widgets/custom_navbar.dart';
+import '../../widgets/custom_drawer.dart';
+import '../../widgets/status_chip.dart';
 
 class PendingOrdersScreen extends StatefulWidget {
   const PendingOrdersScreen({super.key});
@@ -21,12 +19,22 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
   List<Order> _allOrders = [];
   bool _isLoading = true;
   int _selectedIndex = 3;
+  bool _esVendedor = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _verificarRol();
     _loadOrders();
+  }
+
+  Future<void> _verificarRol() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rol = prefs.getString('rol') ?? '';
+    setState(() {
+      _esVendedor = rol.toLowerCase() == 'vendedor';
+    });
   }
 
   Future<void> _loadOrders() async {
@@ -56,14 +64,8 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
         title: const Text('Cancelar pedido'),
         content: const Text('¿Estás seguro que deseas cancelar este pedido?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Sí'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sí')),
         ],
       ),
     );
@@ -91,18 +93,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
       appBar: AppBar(
         title: const Text('Pedidos'),
         backgroundColor: Colors.cyan,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const InfoProfile()),
-              );
-            },
-          )
-        ],
+        automaticallyImplyLeading: true,
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -112,6 +103,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
           ],
         ),
       ),
+      drawer: const CustomDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : TabBarView(
@@ -136,6 +128,13 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                     children: [
                       Text('Pedido #${pedido.id}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Text('Estado: '),
+                          StatusChip(estado: pedido.estado),
+                        ],
+                      ),
                       Text(
                         'Vendedor: ${pedido.vendedorNombre ?? 'Desconocido'}',
                         style: const TextStyle(color: Colors.grey),
@@ -147,11 +146,13 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                           width: 50,
                           height: 50,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.image_not_supported),
+                          errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.image_not_supported),
                         ),
                         title: Text(producto.name),
                         subtitle: Text('Cantidad: ${producto.availableQuantity}'),
-                        trailing: Text('\$${producto.price.toStringAsFixed(2)}'),
+                        trailing:
+                        Text('\$${producto.price.toStringAsFixed(2)}'),
                       )),
                       const SizedBox(height: 6),
                       Align(
@@ -170,7 +171,8 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                           child: TextButton.icon(
                             onPressed: () => _cancelarPedido(pedido.id),
                             icon: const Icon(Icons.cancel, color: Colors.red),
-                            label: const Text('Cancelar pedido', style: TextStyle(color: Colors.red)),
+                            label: const Text('Cancelar pedido',
+                                style: TextStyle(color: Colors.red)),
                           ),
                         )
                     ],
@@ -181,36 +183,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
           );
         }).toList(),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const SellersList()),
-            );
-          } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const MessagesScreen()),
-            );
-          } else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CarScreen()),
-            );
-          }
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.cyan,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Carrito'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Pedidos'),
-        ],
-      ),
+      bottomNavigationBar: const CustomNavigationBar(selectedIndex: 3),
     );
   }
 }
