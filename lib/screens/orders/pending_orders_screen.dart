@@ -1,9 +1,10 @@
+// Reemplaza todo tu archivo actual con este:
+
 import 'package:flutter/material.dart';
 import '../../models/order.dart';
 import '../../services/order_service.dart';
 import '../cart/car_screen.dart';
 import '../sellers/sellers_list.dart';
-import '../sellers/seller_chat.dart';
 import '../user/info_profile.dart';
 import '../user/messages_screen.dart';
 
@@ -48,6 +49,40 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
     return _allOrders.where((o) => o.estado == estado).toList();
   }
 
+  Future<void> _cancelarPedido(int orderId) async {
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancelar pedido'),
+        content: const Text('¿Estás seguro que deseas cancelar este pedido?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sí'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmado == true) {
+      final exito = await OrderService.cancelOrder(orderId);
+      if (exito) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pedido cancelado con éxito')),
+        );
+        _loadOrders();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al cancelar el pedido')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabs = ['pendiente', 'entregado', 'cancelado'];
@@ -89,6 +124,8 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
             itemCount: pedidos.length,
             itemBuilder: (context, index) {
               final pedido = pedidos[index];
+              final esCancelable = pedido.estado == 'pendiente' || pedido.estado == 'confirmado';
+
               return Card(
                 margin: const EdgeInsets.all(10),
                 elevation: 4,
@@ -126,7 +163,16 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                             fontSize: 16,
                           ),
                         ),
-                      )
+                      ),
+                      if (esCancelable)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: () => _cancelarPedido(pedido.id),
+                            icon: const Icon(Icons.cancel, color: Colors.red),
+                            label: const Text('Cancelar pedido', style: TextStyle(color: Colors.red)),
+                          ),
+                        )
                     ],
                   ),
                 ),
@@ -159,22 +205,10 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
         selectedItemColor: Colors.cyan,
         unselectedItemColor: Colors.grey,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Mensajes',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Carrito',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.assignment),
-            label: 'Pedidos',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
+          BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Carrito'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Pedidos'),
         ],
       ),
     );

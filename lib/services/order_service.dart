@@ -51,18 +51,6 @@ class OrderService {
   }
 
 
-
-
-  static Future<bool> cancelOrder(int orderId) async {
-    try {
-      final response = await ApiService.delete('orders/$orderId');
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Error al cancelar pedido: $e');
-      return false;
-    }
-  }
-
   // Obtener pedidos por vendedor (autenticado)
   static Future<List<Order>> getOrdersBySeller() async {
     try {
@@ -92,4 +80,57 @@ class OrderService {
       return false;
     }
   }
+
+  //cancelar pedido
+  static Future<bool> cancelOrder(int orderId) async {
+    try {
+      final response = await ApiService.put('orders/$orderId/cancel');
+
+      if (response.statusCode == 200) {
+        print('Pedido cancelado correctamente');
+        return true;
+      } else {
+        print('Error al cancelar el pedido: ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Excepción al cancelar pedido: $e');
+      return false;
+    }
+  }
+
+  // Confirmar pedido como vendedor
+  static Future<bool> confirmOrderByVendor(int orderId) async {
+    try {
+      final response = await ApiService.put('orders/$orderId/confirm?vendor=true');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error al confirmar pedido como vendedor: $e');
+      return false;
+    }
+  }
+
+// Marcar como entregado
+  static Future<bool> markOrderAsDelivered(int orderId) async {
+    try {
+      final response = await ApiService.put('orders/$orderId/deliver');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error al marcar como entregado: $e');
+      return false;
+    }
+  }
+
+// Cancelar pedido como vendedor
+  static Future<bool> cancelOrderByVendor(int orderId) async {
+    try {
+      final response = await ApiService.put('orders/$orderId/cancel?vendor=true');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error al cancelar pedido como vendedor: $e');
+      return false;
+    }
+  }
+
+
 }
