@@ -3,6 +3,10 @@ import '../../services/cart_service.dart';
 import '../../services/seller_service.dart';
 import '../../services/order_service.dart';
 import '../../models/product.dart';
+import '../user/info_profile.dart';
+import '../user/messages_screen.dart';
+import '../sellers/sellers_list.dart';
+import '../orders/pending_orders_screen.dart';
 
 class CarScreen extends StatefulWidget {
   const CarScreen({super.key});
@@ -13,8 +17,8 @@ class CarScreen extends StatefulWidget {
 
 class _CarScreenState extends State<CarScreen> {
   Map<int, String> sellerNames = {};
-  Map<int, int> orderIds = {}; // sellerId -> orderId
   bool _loadingSellers = true;
+  int _selectedIndex = 2;
 
   @override
   void initState() {
@@ -26,9 +30,7 @@ class _CarScreenState extends State<CarScreen> {
     try {
       final sellers = await SellerService.getAllSellers();
       setState(() {
-        sellerNames = {
-          for (var seller in sellers) seller.id: seller.nombre,
-        };
+        sellerNames = {for (var s in sellers) s.id: s.nombre};
         _loadingSellers = false;
       });
     } catch (e) {
@@ -40,10 +42,12 @@ class _CarScreenState extends State<CarScreen> {
   }
 
   Future<void> _enviarPedido(int sellerId, List<CartItem> items) async {
-    final productos = items.map((item) => {
+    final productos = items
+        .map((item) => {
       'producto_id': item.product.id,
       'cantidad': item.quantity,
-    }).toList();
+    })
+        .toList();
 
     final orderId = await OrderService.createOrderLote(
       vendedorId: sellerId,
@@ -54,26 +58,24 @@ class _CarScreenState extends State<CarScreen> {
 
     if (orderId != null) {
       setState(() {
-        orderIds[sellerId] = orderId;
+        CartService.removeSellerFromCart(sellerId); // 👈 Se elimina visualmente
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Pedido enviado correctamente al vendedor: ${sellerNames[sellerId] ?? "vendedor"}')),
+        SnackBar(content: Text('Pedido enviado al vendedor ${sellerNames[sellerId]}')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ Error visual: la orden pudo haberse creado, pero hubo una falla en la respuesta.')),
+        const SnackBar(content: Text('Error al crear el pedido')),
       );
     }
   }
-
-
 
   Future<void> _cancelarPedido(int sellerId) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('¿Cancelar pedido?'),
-        content: const Text('¿Estás seguro de cancelar el pedido?'),
+        content: const Text('¿Deseas cancelar el pedido?'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
           ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sí')),
@@ -83,28 +85,13 @@ class _CarScreenState extends State<CarScreen> {
 
     if (confirm != true) return;
 
-    final orderId = orderIds[sellerId];
-    if (orderId != null) {
-      final success = await OrderService.cancelOrder(orderId);
-      if (success) {
-        setState(() {
-          CartService.removeSellerFromCart(sellerId);
-          orderIds.remove(sellerId);
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pedido cancelado')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo cancelar el pedido')),
-        );
-      }
-    } else {
-      // Solo limpiar carrito si aún no se ha hecho el pedido
-      setState(() {
-        CartService.removeSellerFromCart(sellerId);
-      });
-    }
+    setState(() {
+      CartService.removeSellerFromCart(sellerId);
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Pedido cancelado')),
+    );
   }
 
   @override
@@ -115,6 +102,18 @@ class _CarScreenState extends State<CarScreen> {
       appBar: AppBar(
         title: const Text('Carrito de Compras'),
         backgroundColor: Colors.cyan,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InfoProfile()),
+              );
+            },
+          )
+        ],
       ),
       body: _loadingSellers
           ? const Center(child: CircularProgressIndicator())
@@ -124,9 +123,7 @@ class _CarScreenState extends State<CarScreen> {
         children: cartGrouped.entries.map((entry) {
           final sellerId = entry.key;
           final cartItems = entry.value;
-          final nombreVendedor =
-              sellerNames[sellerId] ?? 'Vendedor';
-          final pedidoEnviado = orderIds.containsKey(sellerId);
+          final nombreVendedor = sellerNames[sellerId] ?? 'Vendedor';
 
           return Card(
             margin: const EdgeInsets.all(12),
@@ -148,16 +145,13 @@ class _CarScreenState extends State<CarScreen> {
                       fit: BoxFit.cover,
                     ),
                     title: Text(item.product.name),
-                    subtitle: Text(
-                        '\$${item.product.price.toStringAsFixed(2)}'),
+                    subtitle: Text('\$${item.product.price.toStringAsFixed(2)}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
                           icon: const Icon(Icons.remove),
-                          onPressed: pedidoEnviado
-                              ? null
-                              : () {
+                          onPressed: () {
                             setState(() {
                               if (item.quantity > 1) {
                                 item.quantity--;
@@ -168,9 +162,7 @@ class _CarScreenState extends State<CarScreen> {
                         Text('${item.quantity}'),
                         IconButton(
                           icon: const Icon(Icons.add),
-                          onPressed: pedidoEnviado
-                              ? null
-                              : () {
+                          onPressed: () {
                             setState(() {
                               item.quantity++;
                             });
@@ -180,19 +172,6 @@ class _CarScreenState extends State<CarScreen> {
                     ),
                   )),
                   const SizedBox(height: 8),
-                  if (pedidoEnviado)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Estado: Pendiente',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.orange),
-                        ),
-                        SizedBox(height: 8),
-                      ],
-                    ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -205,16 +184,14 @@ class _CarScreenState extends State<CarScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      if (!pedidoEnviado)
-                        ElevatedButton.icon(
-                          onPressed: () => _enviarPedido(
-                              sellerId, cartItems),
-                          icon: const Icon(Icons.send),
-                          label: const Text('Solicitar Pedido'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
-                          ),
+                      ElevatedButton.icon(
+                        onPressed: () => _enviarPedido(sellerId, cartItems),
+                        icon: const Icon(Icons.send),
+                        label: const Text('Solicitar Pedido'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
                         ),
+                      ),
                     ],
                   ),
                 ],
@@ -222,6 +199,56 @@ class _CarScreenState extends State<CarScreen> {
             ),
           );
         }).toList(),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          if (index == 0) { // Home tab
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const SellersList())
+            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MessagesScreen(),
+              ),
+            );
+          } else if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PendingOrdersScreen(),
+              ),
+            );
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
+        },
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: Colors.cyan,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Inicio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            label: 'Mensajes',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Carrito',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.assignment),
+            label: 'Pedidos',
+          ),
+        ],
       ),
     );
   }

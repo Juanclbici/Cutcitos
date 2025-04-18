@@ -9,7 +9,8 @@ import '../../services/category_service.dart';
 import '../../services/product_service.dart';
 import '../../widgets/product_image.dart';
 import '../../services/cart_service.dart';
-import '../cart/car_screen.dart'; // al crear la carpeta cart/
+import '../cart/car_screen.dart';
+import '../orders/pending_orders_screen.dart';
 
 class SellersList extends StatefulWidget {
   const SellersList({super.key});
@@ -103,6 +104,18 @@ class _SellersListState extends State<SellersList> {
       appBar: AppBar(
         title: const Text("Productos"),
         backgroundColor: Colors.cyan,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InfoProfile()),
+              );
+            },
+          )
+        ],
       ),
       body: _isLoading || _isLoadingCategories
           ? const Center(child: CircularProgressIndicator())
@@ -113,7 +126,7 @@ class _SellersListState extends State<SellersList> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               decoration: InputDecoration(
-                hintText: 'Buscar vendedores o productos...',
+                hintText: 'Buscar productos...',
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey.shade200,
@@ -301,7 +314,7 @@ class _SellersListState extends State<SellersList> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const InfoProfile(),
+                builder: (context) => const PendingOrdersScreen(),
               ),
             );
           } else {
@@ -327,8 +340,8 @@ class _SellersListState extends State<SellersList> {
             label: 'Carrito',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
+            icon: Icon(Icons.assignment),
+            label: 'Pedidos',
           ),
         ],
       ),

@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import '../../models/User.dart';
 import '../../services/user_service.dart';
 import 'messages_screen.dart';
+import '../cart/car_screen.dart';
+import '../sellers/sellers_list.dart';
+import '../orders/pending_orders_screen.dart';
 
 class InfoProfile extends StatefulWidget {
   const InfoProfile({super.key});
@@ -14,6 +17,7 @@ class InfoProfile extends StatefulWidget {
 class _InfoProfileState extends State<InfoProfile> {
   User? _user;
   bool _isLoading = true;
+  int _selectedIndex = 3;
 
   @override
   void initState() {
@@ -93,7 +97,7 @@ class _InfoProfileState extends State<InfoProfile> {
             Text(
               'Estado: ${_formatStatus(_user!.estadoCuenta)}',
               style: TextStyle(
-                color: _user!.estadoCuenta == 'activo'
+                color: _user!.estadoCuenta == 'active'
                     ? Colors.green.shade700
                     : Colors.red.shade700,
                 fontWeight: FontWeight.w500,
@@ -140,15 +144,36 @@ class _InfoProfileState extends State<InfoProfile> {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 3,
+        currentIndex: _selectedIndex,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.pop(context);
-          } else if (index == 1) {
+          if (index == 0) { // Home tab
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const SellersList())
+            );
+          } if (index == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const MessagesScreen()),
+              MaterialPageRoute(
+                builder: (context) => const MessagesScreen(),
+              ),
             );
+          }else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CarScreen()),
+            );
+          } else if (index == 3) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PendingOrdersScreen(),
+              ),
+            );
+          }else {
+            setState(() {
+              _selectedIndex = index;
+            });
           }
         },
         type: BottomNavigationBarType.fixed,
@@ -168,8 +193,8 @@ class _InfoProfileState extends State<InfoProfile> {
             label: 'Carrito',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
+            icon: Icon(Icons.assignment),
+            label: 'Pedidos',
           ),
         ],
       ),

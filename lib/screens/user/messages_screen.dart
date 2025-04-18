@@ -3,6 +3,8 @@ import '../../models/SellerData.dart';
 import 'info_profile.dart';
 import '../sellers/sellers_list.dart';
 import '../sellers/seller_chat.dart';
+import '../cart/car_screen.dart';
+import '../orders/pending_orders_screen.dart';
 
 // First class - MessagesScreen
 class MessagesScreen extends StatefulWidget {
@@ -45,6 +47,17 @@ class _MessagesScreenState extends State<MessagesScreen> {
         title: const Text("Mensajes"),
         backgroundColor: Colors.cyan,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const InfoProfile()),
+              );
+            },
+          )
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -102,11 +115,16 @@ class _MessagesScreenState extends State<MessagesScreen> {
                 context,
                 MaterialPageRoute(builder: (context) => const SellersList())
             );
-          } else if (index == 3) { // Profile tab
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CarScreen()),
+            );
+          } else if (index == 3) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const InfoProfile(),
+                builder: (context) => const PendingOrdersScreen(),
               ),
             );
           } else {
@@ -132,8 +150,8 @@ class _MessagesScreenState extends State<MessagesScreen> {
             label: 'Carrito',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Perfil',
+            icon: Icon(Icons.assignment),
+            label: 'Pedidos',
           ),
         ],
       ),

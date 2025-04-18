@@ -3,12 +3,13 @@ import '../models/order.dart';
 import 'api_service.dart';
 
 class OrderService {
-  static Future<List<Order>> getOrdersByUser(int userId) async {
+  static Future<List<Order>> getOrdersByUser() async {
     try {
-      final response = await ApiService.get('orders/user/$userId');
+      final response = await ApiService.get('orders/history');
 
-      if (response.statusCode == 201) {
-        final List<dynamic> data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final jsonBody = jsonDecode(response.body);
+        final List data = jsonBody['data'];
         return data.map((json) => Order.fromJson(json)).toList();
       } else {
         throw Exception('Error al obtener órdenes: ${response.statusCode}');
@@ -18,6 +19,7 @@ class OrderService {
       rethrow;
     }
   }
+
 
   static Future<int?> createOrderLote({
     required int vendedorId,
