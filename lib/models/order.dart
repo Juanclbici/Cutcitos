@@ -38,7 +38,9 @@ class Order {
       fecha: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
       productoId: json['producto_id'] ?? 0,
       productos: productosParsed,
-      vendedorNombre: json['Vendedor']?['nombre'],
+      vendedorNombre: productosParsed.isNotEmpty
+          ? productosParsed.first.sellerName
+          : 'Desconocido',
     );
   }
 }

@@ -99,7 +99,10 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                     children: [
                       Text('Pedido #${pedido.id}',
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('Vendedor: ${pedido.vendedorNombre ?? 'Desconocido'}'),
+                      Text(
+                        'Vendedor: ${pedido.vendedorNombre ?? 'Desconocido'}',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
                       const SizedBox(height: 6),
                       ...pedido.productos.map((producto) => ListTile(
                         leading: Image.asset(
