@@ -20,6 +20,7 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
   bool _isLoading = true;
   int _selectedIndex = 3;
   bool _esVendedor = false;
+  DateTime? _fechaSeleccionada;
 
   @override
   void initState() {
@@ -50,11 +51,40 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
     }
   }
 
-  List<Order> _filterOrders(String estado) {
-    if (estado == 'pendiente') {
-      return _allOrders.where((o) => o.estado == 'pendiente' || o.estado == 'confirmado').toList();
+  Future<void> _seleccionarFecha() async {
+    final DateTime? fecha = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2023),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (fecha != null) {
+      setState(() {
+        _fechaSeleccionada = fecha;
+      });
     }
-    return _allOrders.where((o) => o.estado == estado).toList();
+  }
+
+  String _formatearFecha(DateTime fecha) {
+    return '${fecha.day.toString().padLeft(2, '0')}/'
+        '${fecha.month.toString().padLeft(2, '0')}/'
+        '${fecha.year}';
+  }
+
+  List<Order> _filterOrders(String estado) {
+    List<Order> pedidos = estado == 'pendiente'
+        ? _allOrders.where((o) => o.estado == 'pendiente' || o.estado == 'confirmado').toList()
+        : _allOrders.where((o) => o.estado == estado).toList();
+
+    if (_fechaSeleccionada != null) {
+      pedidos = pedidos.where((o) =>
+      o.fecha.year == _fechaSeleccionada!.year &&
+          o.fecha.month == _fechaSeleccionada!.month &&
+          o.fecha.day == _fechaSeleccionada!.day).toList();
+    }
+
+    return pedidos;
   }
 
   Future<void> _cancelarPedido(int orderId) async {
@@ -91,9 +121,22 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pedidos'),
+        title: const Text('Mis compras'),
         backgroundColor: Colors.cyan,
         automaticallyImplyLeading: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.date_range),
+            tooltip: 'Filtrar por fecha',
+            onPressed: _seleccionarFecha,
+          ),
+          if (_fechaSeleccionada != null)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              tooltip: 'Limpiar filtro',
+              onPressed: () => setState(() => _fechaSeleccionada = null),
+            ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -134,6 +177,11 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                           const Text('Estado: '),
                           StatusChip(estado: pedido.estado),
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Fecha: ${_formatearFecha(pedido.fecha)}',
+                        style: const TextStyle(color: Colors.grey),
                       ),
                       Text(
                         'Vendedor: ${pedido.vendedorNombre ?? 'Desconocido'}',

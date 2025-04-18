@@ -9,6 +9,7 @@ class Product {
   final int sellerId;
   final String sellerName;
   final String categoryName;
+  final int? cantidadSolicitada;
 
   Product({
     required this.id,
@@ -21,6 +22,7 @@ class Product {
     required this.sellerId,
     required this.sellerName,
     required this.categoryName,
+    required this.cantidadSolicitada,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,7 @@ class Product {
       sellerId: json['vendedor_id'],
       sellerName: json['Vendedor']?['nombre'] ?? 'Vendedor desconocido',
       categoryName: json['Categoria']?['nombre'] ?? 'Sin categoría',
+      cantidadSolicitada: json['OrderItem']?['cantidad'],
     );
   }
 

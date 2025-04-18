@@ -17,6 +17,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
   List<Order> _allOrders = [];
   bool _isLoading = true;
   late TabController _tabController;
+  DateTime? _fechaSeleccionada;
 
   @override
   void initState() {
@@ -39,20 +40,48 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
     }
   }
 
-  List<Order> _filterOrders(String categoria) {
-    switch (categoria) {
-      case 'pendiente':
-        return _allOrders
-            .where((o) => o.estado == 'pendiente' || o.estado == 'confirmado')
-            .toList();
-      case 'entregado':
-        return _allOrders.where((o) => o.estado == 'entregado').toList();
-      case 'cancelado':
-        return _allOrders.where((o) => o.estado == 'cancelado').toList();
-      default:
-        return [];
+  Future<void> _seleccionarFecha() async {
+    final DateTime? fecha = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2023),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (fecha != null) {
+      setState(() {
+        _fechaSeleccionada = fecha;
+      });
     }
   }
+
+  String _formatearFecha(DateTime fecha) {
+    return '${fecha.day.toString().padLeft(2, '0')}/'
+        '${fecha.month.toString().padLeft(2, '0')}/'
+        '${fecha.year}';
+  }
+
+  List<Order> _filterOrders(String categoria) {
+    List<Order> filtrados = switch (categoria) {
+      'pendiente' => _allOrders
+          .where((o) => o.estado == 'pendiente' || o.estado == 'confirmado')
+          .toList(),
+      'entregado' => _allOrders.where((o) => o.estado == 'entregado').toList(),
+      'cancelado' => _allOrders.where((o) => o.estado == 'cancelado').toList(),
+      _ => []
+    };
+
+    if (_fechaSeleccionada != null) {
+      filtrados = filtrados.where((o) {
+        return o.fecha.year == _fechaSeleccionada!.year &&
+            o.fecha.month == _fechaSeleccionada!.month &&
+            o.fecha.day == _fechaSeleccionada!.day;
+      }).toList();
+    }
+
+    return filtrados;
+  }
+
 
   Future<void> _confirmarPedido(int orderId) async {
     final success = await OrderService.confirmOrderByVendor(orderId);
@@ -60,8 +89,26 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
   }
 
   Future<void> _entregarPedido(int orderId) async {
-    final success = await OrderService.markOrderAsDelivered(orderId);
-    _showResult(success, 'Pedido entregado');
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Marcar como entregado?'),
+        content: const Text('¿Estás seguro de que este pedido ha sido entregado?'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Sí, entregar')),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      final success = await OrderService.markOrderAsDelivered(orderId);
+      _showResult(success, 'Pedido marcado como entregado');
+    }
   }
 
   Future<void> _cancelarPedido(int orderId) async {
@@ -98,6 +145,20 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
       appBar: AppBar(
         title: const Text('Mis Pedidos'),
         backgroundColor: Colors.cyan,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.date_range),
+            tooltip: 'Filtrar por fecha',
+            onPressed: _seleccionarFecha,
+          ),
+          if (_fechaSeleccionada != null)
+            IconButton(
+              icon: const Icon(Icons.clear),
+              tooltip: 'Limpiar filtro',
+              onPressed: () => setState(() => _fechaSeleccionada = null),
+            ),
+        ],
+
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -132,9 +193,24 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
                     children: [
                       Row(
                         children: [
-                          const Text('Estado: '),
+                          Text(
+                            'Pedido #${pedido.id}',
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                          ),
+                          const Spacer(),
                           StatusChip(estado: pedido.estado),
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Fecha: ${_formatearFecha(pedido.fecha)}',
+                        style: const TextStyle(fontSize: 13, color: Colors.grey),
+                      ),
+                      Text(
+                        'Comprador: ${pedido.compradorNombre ?? 'Desconocido'}',
+                        style: const TextStyle(color: Colors.grey),
                       ),
                       const SizedBox(height: 6),
                       ...pedido.productos.map((producto) => Container(
@@ -155,7 +231,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
                           ),
                           title: Text(producto.name),
                           subtitle: Text(
-                              'Cantidad: ${producto.availableQuantity}'),
+                              'Cantidad solicitada: ${producto.cantidadSolicitada ?? 'N/A'}'),
                           trailing: Text(
                               '\$${producto.price.toStringAsFixed(2)}'),
                         ),
@@ -199,8 +275,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
                             ElevatedButton.icon(
                               onPressed: () =>
                                   _entregarPedido(pedido.id),
-                              icon:
-                              const Icon(Icons.local_shipping),
+                              icon: const Icon(Icons.local_shipping),
                               label: const Text('Entregar'),
                             ),
                             const SizedBox(width: 10),

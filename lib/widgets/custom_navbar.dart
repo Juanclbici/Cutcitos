@@ -62,7 +62,7 @@ class CustomNavigationBar extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: 'Mensajes'),
           BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: 'Carrito'),
-          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Pedidos'),
+          BottomNavigationBarItem(icon: Icon(Icons.assignment), label: 'Compras'),
         ],
       ),
     );

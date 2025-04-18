@@ -10,6 +10,8 @@ class Order {
   final int productoId;
   final List<Product> productos;
   final String? vendedorNombre;
+  final String? compradorNombre;
+
 
   Order({
     required this.id,
@@ -21,6 +23,7 @@ class Order {
     this.productoId = 0,
     required this.productos,
     this.vendedorNombre,
+    this.compradorNombre
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -41,6 +44,8 @@ class Order {
       vendedorNombre: productosParsed.isNotEmpty
           ? productosParsed.first.sellerName
           : 'Desconocido',
+      compradorNombre: json['Usuario']?['nombre'],
+
     );
   }
 }
