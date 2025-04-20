@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/seller.dart';
-import 'api_service.dart';
+import '../../models/seller.dart';
+import '../api_service.dart';
 
 class SellerService {
   static Future<List<Seller>> getAllSellers() async {

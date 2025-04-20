@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/order.dart';
-import '../../services/order_service.dart';
+import '../../services/order/order_service.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
 import '../../widgets/status_chip.dart';
+import '../../widgets/product_image.dart';
 
 class PendingOrdersScreen extends StatefulWidget {
   const PendingOrdersScreen({super.key});
@@ -189,16 +190,15 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                       ),
                       const SizedBox(height: 6),
                       ...pedido.productos.map((producto) => ListTile(
-                        leading: Image.asset(
-                          producto.image,
+                        leading: ProductImage(
+                          imagePath: producto.image,
                           width: 50,
                           height: 50,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.image_not_supported),
+                          borderRadius: BorderRadius.circular(8),
                         ),
+
                         title: Text(producto.name),
-                        subtitle: Text('Cantidad: ${producto.availableQuantity}'),
+                        subtitle: Text('Cantidad: ${producto.cantidadSolicitada}'),
                         trailing:
                         Text('\$${producto.price.toStringAsFixed(2)}'),
                       )),

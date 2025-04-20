@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/order.dart';
-import '../../services/order_service.dart';
+import '../../services/order/order_service.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
+import '../../widgets/product_image.dart';
 
 class VendorOrdersScreen extends StatefulWidget {
   const VendorOrdersScreen({super.key});
@@ -221,13 +222,11 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: ListTile(
-                          leading: Image.asset(
-                            producto.image,
+                          leading: ProductImage(
+                            imagePath: producto.image,
                             width: 50,
                             height: 50,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.image_not_supported),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           title: Text(producto.name),
                           subtitle: Text(

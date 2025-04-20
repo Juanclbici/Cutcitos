@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:provider/provider.dart';
+
 import 'screens/auth/login_screen.dart';
-import 'screens/sellers/sellers_list.dart';
+import 'screens/home/home_screen.dart';
 import 'services/api_service.dart';
+import 'providers/auth_provider.dart';
 
 Future<void> main() async {
-  // Carga las variables de entorno ANTES de iniciar la app
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
   await ApiService.initialize();
   runApp(const MyApp());
@@ -16,18 +19,39 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Cutcitos App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider()..loadUserFromPrefs(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Cutcitos App',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          visualDensity: VisualDensity.adaptivePlatformDensity,
+        ),
+        debugShowCheckedModeBanner: false,
+        home: const AuthWrapper(),
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const LoginScreen(),
-        '/home': (context) => const SellersList(),
-      },
-      debugShowCheckedModeBanner: false,
     );
+  }
+}
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+
+    if (auth.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return auth.isAuthenticated
+        ? const HomeScreen()
+        : const LoginScreen();
   }
 }

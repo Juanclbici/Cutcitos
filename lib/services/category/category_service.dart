@@ -1,10 +1,30 @@
 // services/category_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/category.dart';
-import 'api_service.dart';
+import '../../models/category.dart';
+import '../api_service.dart';
 
 class CategoryService {
+
+  // Crear categorias
+  static Future<void> createCategory({
+    required String nombre,
+    String? descripcion,
+    String? imagen,
+  }) async {
+    final response = await ApiService.post('categories', {
+      'nombre': nombre,
+      'descripcion': descripcion,
+      'imagen': imagen,
+    });
+
+    if (response.statusCode != 201) {
+      final body = json.decode(response.body);
+      throw Exception(body['message'] ?? 'Error al crear categoría');
+    }
+  }
+
+  // Obtener todas las categorias
   static Future<List<Category>> getAllCategories() async {
     try {
       print("Solicitando categorías al backend...");

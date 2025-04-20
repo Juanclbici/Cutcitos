@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class ProductImage extends StatelessWidget {
+class UserImage extends StatelessWidget {
   final String imagePath;
   final double width;
   final double height;
   final BorderRadius? borderRadius;
   final BoxFit fit;
 
-  const ProductImage({
+  const UserImage({
     super.key,
     required this.imagePath,
     this.width = 100,
@@ -18,9 +18,9 @@ class ProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String finalPath = imagePath == 'default_product.png'
-        ? 'assets/images/default/default_product.png'
-        : 'assets/images/products/$imagePath';
+    final String finalPath = imagePath == 'default_profile.jpg'
+        ? 'assets/images/default/default_profile.jpg'
+        : 'assets/images/user/$imagePath';
 
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
@@ -31,7 +31,7 @@ class ProductImage extends StatelessWidget {
         fit: fit,
         errorBuilder: (_, __, ___) {
           return Image.asset(
-            'assets/images/default/default_product.png',
+            'assets/images/default/default_profile.jpg',
             width: width,
             height: height,
             fit: fit,

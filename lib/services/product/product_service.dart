@@ -1,6 +1,6 @@
 import 'dart:convert';
-import '../models/product.dart';
-import 'api_service.dart';
+import '../../models/product.dart';
+import '../api_service.dart';
 
 class ProductService {
   static Future<List<Product>> getAllProducts() async {
@@ -60,4 +60,73 @@ class ProductService {
       rethrow;
     }
   }
+
+  static Future<List<Product>> getMyProducts() async {
+    try {
+      final response = await ApiService.get('products/vendor/my-products');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        if (data['success'] == true) {
+          return (data['data'] as List)
+              .map((item) => Product.fromJson(item))
+              .toList();
+        }
+      }
+      throw Exception('Error al cargar tus productos');
+    } catch (e) {
+      print('Error en getMyProducts: $e');
+      rethrow;
+    }
+  }
+  static Future<bool> createProduct(Map<String, dynamic> productData) async {
+    try {
+      final response = await ApiService.post('products', productData);
+
+      if (response.statusCode == 201) {
+        return true;
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Error al crear producto');
+      }
+    } catch (e) {
+      print('Error al crear producto: $e');
+      rethrow;
+    }
+  }
+  static Future<bool> updateProduct(int productId, Map<String, dynamic> productData) async {
+    try {
+      final response = await ApiService.putWithBody('products/$productId', productData);
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Error al actualizar producto');
+      }
+    } catch (e) {
+      print('Error al actualizar producto: $e');
+      rethrow;
+    }
+  }
+
+  static Future<bool> deleteProduct(int productId) async {
+    try {
+      final response = await ApiService.delete('products/$productId');
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'No se pudo eliminar');
+      }
+    } catch (e) {
+      print('Error al eliminar producto: $e');
+      rethrow;
+    }
+  }
+
+
+
+
 }

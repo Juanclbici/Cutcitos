@@ -127,4 +127,27 @@ class ApiService {
     }
   }
 
+  // Método PUT con body (para productos u otras actualizaciones)
+  static Future<http.Response> putWithBody(String endpoint, Map<String, dynamic> body) async {
+    try {
+      final headers = {
+        'Content-Type': 'application/json',
+        if (_token != null) 'Authorization': 'Bearer $_token',
+      };
+
+      final response = await http.put(
+        Uri.parse('$_baseUrl/$endpoint'),
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      _checkAuthError(response);
+      return response;
+    } catch (e) {
+      print('Error en PUT con body $endpoint: $e');
+      rethrow;
+    }
+  }
+
+
 }

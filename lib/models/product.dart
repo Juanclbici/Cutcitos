@@ -10,6 +10,7 @@ class Product {
   final String sellerName;
   final String categoryName;
   final int? cantidadSolicitada;
+  final String status;
 
   Product({
     required this.id,
@@ -23,32 +24,23 @@ class Product {
     required this.sellerName,
     required this.categoryName,
     required this.cantidadSolicitada,
+    required this.status,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
-    print("Parseando producto: ${json['nombre']}"); // Debug adicional
-
     return Product(
       id: json['producto_id'],
       name: json['nombre'],
       description: json['descripcion'],
       price: double.tryParse(json['precio']?.toString() ?? '0') ?? 0.0,
       availableQuantity: json['cantidad_disponible'],
-      image: _getImagePath(json['imagen']),
+      image: json['imagen'] ?? 'default_product.png',
       categoryId: json['categoria_id'],
       sellerId: json['vendedor_id'],
       sellerName: json['Vendedor']?['nombre'] ?? 'Vendedor desconocido',
       categoryName: json['Categoria']?['nombre'] ?? 'Sin categoría',
       cantidadSolicitada: json['OrderItem']?['cantidad'],
+      status: json['estado_producto'] ?? 'disponible',
     );
-  }
-
-  static String _getImagePath(String? imageName) {
-    const defaultImage = 'assets/images/default_product.png';
-
-    if (imageName == null || imageName.isEmpty) {
-      return defaultImage;
-    }
-    return 'assets/images/products/$imageName';
   }
 }

@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../models/category.dart';
 import '../../models/product.dart';
-import '../user/info_profile.dart';
-import '../../services/category_service.dart';
-import '../../services/product_service.dart';
+import '../../services/category/category_service.dart';
+import '../../services/product/product_service.dart';
+import '../../services/user/user_service.dart';
+import '../../services/cart/cart_service.dart';
 import '../../widgets/product_image.dart';
-import '../../services/cart_service.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
 
-class SellersList extends StatefulWidget {
-  const SellersList({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<SellersList> createState() => _SellersListState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _SellersListState extends State<SellersList> {
+class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = true;
   List<Category> _categories = [];
   bool _isLoadingCategories = true;
@@ -234,6 +234,15 @@ class _SellersListState extends State<SellersList> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
+                                Text(
+                                  product.sellerName ?? '',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -256,12 +265,25 @@ class _SellersListState extends State<SellersList> {
                                         const SizedBox(width: 8),
                                         IconButton(
                                           icon: const Icon(Icons.add_shopping_cart, color: Colors.cyan),
-                                          onPressed: () {
+                                          onPressed: () async {
+                                            final user = await UserService.getCurrentUser();
+
+                                            print('user.id: ${user.id} (${user.id.runtimeType})');
+                                            print('product.sellerId: ${product.sellerId} (${product.sellerId.runtimeType})');
+
+                                            if (user.id == product.sellerId.toString()) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(content: Text('No puedes comprar tus propios productos')),
+                                              );
+                                              return;
+                                            }
+
                                             CartService.addToCart(product);
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               SnackBar(content: Text('${product.name} agregado al carrito')),
                                             );
                                           },
+
                                         ),
                                       ],
                                     ),

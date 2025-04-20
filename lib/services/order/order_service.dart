@@ -1,6 +1,6 @@
 import 'dart:convert';
-import '../models/order.dart';
-import 'api_service.dart';
+import '../../models/order.dart';
+import '../api_service.dart';
 
 class OrderService {
   static Future<List<Order>> getOrdersByUser() async {
@@ -66,18 +66,6 @@ class OrderService {
     } catch (e) {
       print('Error al obtener pedidos del vendedor: $e');
       rethrow;
-    }
-  }
-
-  // Confirmar pedido
-  static Future<bool> confirmOrder(int orderId) async {
-    try {
-      final response = await ApiService.put('orders/$orderId/confirm');
-
-      return response.statusCode == 200;
-    } catch (e) {
-      print('Error al confirmar pedido: $e');
-      return false;
     }
   }
 

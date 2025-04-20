@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import '../../services/auth_service.dart';
-import '../sellers/sellers_list.dart';
+import '../../services/user/auth_service.dart';
+import '../home/home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -32,30 +32,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
+      FocusScope.of(context).unfocus();
       setState(() => _isLoading = true);
 
       try {
         if (!mounted) return;
 
-        bool isRegistered = await _authService.register(
+        final result = await _authService.register(
+          context: context,
           codigo: _codigoController.text,
           password: _passwordController.text,
           nombre: _nombreController.text,
-          rol: _roleMapping[_selectedRole] ?? "", // Usamos el mapeo aquí
+          rol: _roleMapping[_selectedRole] ?? "",
           telefono: _completePhoneNumber ?? "",
           email: _emailController.text,
         );
 
         if (!mounted) return;
 
-        if (isRegistered) {
+        if (result['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result['message'] ?? 'Registro exitoso')),
+          );
+
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const SellersList()),
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
-          _showErrorDialog('Hubo un problema al registrar el usuario.');
+          _showErrorDialog(result['message']);
         }
+
       } catch (e) {
         if (!mounted) return;
         _showErrorDialog('Error: ${e.toString()}');
@@ -66,6 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     }
   }
+
 
   void _showErrorDialog(String message) {
     showDialog(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../screens/sellers/sellers_list.dart';
+import '../screens/home/home_screen.dart';
 import '../screens/user/messages_screen.dart';
 import '../screens/cart/car_screen.dart';
 import '../screens/orders/pending_orders_screen.dart';
@@ -16,7 +16,7 @@ class CustomNavigationBar extends StatelessWidget {
     Widget destination;
     switch (index) {
       case 0:
-        destination = const SellersList();
+        destination = const HomeScreen();
         break;
       case 1:
         destination = const MessagesScreen();

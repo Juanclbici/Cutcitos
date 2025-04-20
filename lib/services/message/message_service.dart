@@ -1,6 +1,6 @@
 import 'dart:convert';
-import '../models/message.dart';
-import 'api_service.dart';
+import '../../models/message.dart';
+import '../api_service.dart';
 
 class MessageService {
   static Future<List<Message>> getMessages(int emisorId, int receptorId) async {

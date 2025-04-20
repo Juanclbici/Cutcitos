@@ -1,7 +1,7 @@
 // lib/services/user_service.dart
 import 'dart:convert';
-import '../models/User.dart'; // (Ahora crearemos un modelo limpio)
-import 'api_service.dart';
+import '../../models/User.dart'; // (Ahora crearemos un modelo limpio)
+import '../api_service.dart';
 
 class UserService {
   static Future<User> getCurrentUser() async {

@@ -1,35 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/auth_provider.dart';
 import '../screens/user/info_profile.dart';
 import '../screens/orders/vendor_orders_screen.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/sellers/seller_list_screen.dart';
+import '../screens/sellers/my_products_screen.dart.dart';
+import '../screens/admin/category_admin_screen.dart';
 
-class CustomDrawer extends StatefulWidget {
+class CustomDrawer extends StatelessWidget {
   const CustomDrawer({super.key});
 
-  @override
-  State<CustomDrawer> createState() => _CustomDrawerState();
-}
-
-class _CustomDrawerState extends State<CustomDrawer> {
-  bool _esVendedor = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _verificarRol();
-  }
-
-  Future<void> _verificarRol() async {
-    final prefs = await SharedPreferences.getInstance();
-    final rol = prefs.getString('rol') ?? '';
-    setState(() {
-      _esVendedor = rol.toLowerCase() == 'seller' || rol.toLowerCase() == 'vendedor';
-    });
-  }
-
-  Future<void> _mostrarConfirmacionLogout() async {
+  Future<void> _mostrarConfirmacionLogout(BuildContext context) async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -49,10 +32,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
     );
 
     if (confirmar == true) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      await Provider.of<AuthProvider>(context, listen: false).logout();
 
-      if (!mounted) return;
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sesión cerrada correctamente'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -63,6 +54,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthProvider>(context);
+    final esVendedor = auth.user?.rol.toLowerCase() == 'seller';
+    final esAdmin = auth.user?.rol.toLowerCase() == 'admin';
+
     return Drawer(
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: 40),
@@ -78,7 +73,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               );
             },
           ),
-          if (_esVendedor)
+          if (esVendedor)
             ListTile(
               leading: const Icon(Icons.store),
               title: const Text('Ventas'),
@@ -90,11 +85,47 @@ class _CustomDrawerState extends State<CustomDrawer> {
                 );
               },
             ),
+          if (esVendedor)
+            ListTile(
+              leading: const Icon(Icons.inventory),
+              title: const Text('Mis Productos'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyProductsScreen()),
+                );
+              },
+            ),
+          ListTile(
+            leading: const Icon(Icons.people_alt),
+            title: const Text('Vendedores'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SellerListScreen()),
+              );
+            },
+          ),
+          if (esAdmin)
+            ListTile(
+              leading: const Icon(Icons.category),
+              title: const Text('Categorías'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CategoryAdminScreen()),
+                );
+              },
+            ),
+
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Cerrar sesión', style: TextStyle(color: Colors.red)),
-            onTap: _mostrarConfirmacionLogout,
+            onTap: () => _mostrarConfirmacionLogout(context),
           ),
         ],
       ),

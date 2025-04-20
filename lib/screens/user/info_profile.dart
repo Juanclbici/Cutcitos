@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/User.dart';
-import '../../services/user_service.dart';
-import 'messages_screen.dart';
-import '../cart/car_screen.dart';
-import '../sellers/sellers_list.dart';
-import '../orders/pending_orders_screen.dart';
+import '../../services/user/user_service.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
+import '../../widgets/user_image.dart';
 
 class InfoProfile extends StatefulWidget {
   const InfoProfile({super.key});
@@ -61,11 +58,12 @@ class _InfoProfileState extends State<InfoProfile> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Foto de perfil
-            CircleAvatar(
-              radius: 60,
-              backgroundImage: _user!.fotoPerfil.startsWith('http')
-                  ? NetworkImage(_user!.fotoPerfil)
-                  : AssetImage(_user!.fotoPerfil) as ImageProvider,
+            UserImage(
+              imagePath: _user!.fotoPerfil,
+              width: 120,
+              height: 120,
+              borderRadius: BorderRadius.circular(60), // Para que se vea como un círculo
+              fit: BoxFit.cover,
             ),
             const SizedBox(height: 16),
 
@@ -206,9 +204,9 @@ class _InfoProfileState extends State<InfoProfile> {
 
   String _formatRole(String role) {
     switch (role) {
-      case 'usuario':
-        return 'Estudiante';
-      case 'vendedor':
+      case 'buyer':
+        return 'Comprador';
+      case 'seller':
         return 'Vendedor';
       case 'admin':
         return 'Administrador';
@@ -219,9 +217,9 @@ class _InfoProfileState extends State<InfoProfile> {
 
   String _formatStatus(String status) {
     switch (status) {
-      case 'activo':
+      case 'active':
         return 'Activo';
-      case 'bloqueado':
+      case 'inactive':
         return 'Bloqueado';
       default:
         return status;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
-import '../sellers/sellers_list.dart';
+import '../../services/user/auth_service.dart';
+import '../home/home_screen.dart';
 import 'register_screen.dart';
 import 'password_screen.dart';
 
@@ -20,10 +20,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() async {
     if (_formKey.currentState!.validate()) {
+      FocusScope.of(context).unfocus();
       setState(() => _isLoading = true);
 
       try {
         bool isAuthenticated = await _authService.login(
+          context,
           _emailController.text,
           _passwordController.text,
         );
@@ -31,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (isAuthenticated) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const SellersList()),
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
           _showErrorDialog('Email o contraseña incorrectos');
@@ -43,6 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
 
   void _showErrorDialog(String message) {
     showDialog(

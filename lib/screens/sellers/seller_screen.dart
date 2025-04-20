@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../models/seller.dart';
+import '../../models/product.dart';
+import '../../services/product/product_service.dart';
+import '../../widgets/user_image.dart';
+import '../../widgets/product_image.dart';
+import '../../widgets/user_cover.dart';
 import 'seller_chat.dart';
-import '../../models/SellerData.dart';
+import '../../services/user/user_service.dart';
+import '../../services/cart/cart_service.dart';
 
 class SellerScreen extends StatefulWidget {
   final Seller seller;
@@ -15,30 +22,33 @@ class SellerScreen extends StatefulWidget {
 }
 
 class _SellerScreenState extends State<SellerScreen> {
+  late Future<List<Product>> _productsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _productsFuture = _loadProductsForSeller();
+  }
+
+  Future<List<Product>> _loadProductsForSeller() async {
+    final allProducts = await ProductService.getAllProducts();
+    return allProducts
+        .where((product) => product.sellerId == widget.seller.id)
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final seller = widget.seller;
+
     return Scaffold(
       body: Column(
         children: [
-          // Stack para la imagen de portada y el perfil del vendedor
           Stack(
             clipBehavior: Clip.none,
             children: [
-              // Imagen de portada
-              Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage(widget.seller.coverImage),
-                    fit: BoxFit.cover,
-                  ),
-                  color: Colors.cyan, // Color de respaldo si la imagen falla
-                ),
-              ),
+              const UserCover(),
 
-              //Boton de regreso
               Positioned(
                 top: 40,
                 left: 16,
@@ -53,8 +63,6 @@ class _SellerScreenState extends State<SellerScreen> {
                   ),
                 ),
               ),
-
-              // Información del vendedor
               Positioned(
                 bottom: -40,
                 left: 0,
@@ -65,7 +73,12 @@ class _SellerScreenState extends State<SellerScreen> {
                       CircleAvatar(
                         radius: 45,
                         backgroundColor: Colors.white,
-                        backgroundImage: AssetImage(widget.seller.profileImage),
+                        child: UserImage(
+                          imagePath: seller.fotoPerfil,
+                          width: 85,
+                          height: 85,
+                          borderRadius: BorderRadius.circular(60),
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -82,7 +95,7 @@ class _SellerScreenState extends State<SellerScreen> {
                           ],
                         ),
                         child: Text(
-                          widget.seller.name,
+                          seller.nombre,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -95,82 +108,100 @@ class _SellerScreenState extends State<SellerScreen> {
               ),
             ],
           ),
-
-          // Espacio para compensar la foto de perfil
           const SizedBox(height: 50),
-
-          // Información adicional del vendedor
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _infoItem(Icons.star, widget.seller.rating.toString(), "Valoración"),
+                _infoItem(Icons.mail, seller.email, "Correo"),
+                _infoItem(Icons.phone, seller.telefono, "Teléfono"),
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // Título de productos
           const Padding(
             padding: EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Productos disponibles',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+            child: Text(
+              'Productos disponibles',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
-
-          // Lista de productos
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: widget.seller.products.length,
-              itemBuilder: (context, index) {
-                final product = widget.seller.products[index];
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(12),
-                    leading: Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.grey.shade200,
-                        image: DecorationImage(
-                          image: AssetImage(product.image),
-                          fit: BoxFit.cover,
+            child: FutureBuilder<List<Product>>(
+              future: _productsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+
+                final products = snapshot.data ?? [];
+
+                if (products.isEmpty) {
+                  return const Center(child: Text('No hay productos de este vendedor.'));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: products.length,
+                    itemBuilder: (context, index) {
+                      final product = products[index];
+                      return Card(
+                        elevation: 2,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              ProductImage(
+                                imagePath: product.image,
+                                width: 70,
+                                height: 70,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    const SizedBox(height: 4),
+                                    Text('\$${product.price.toStringAsFixed(2)}',
+                                        style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.cyan)),
+                                    Text(product.status ?? 'Disponible',
+                                        style: TextStyle(color: _getStatusColor(product.status))),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add_shopping_cart, color: Colors.cyan),
+                                onPressed: () async {
+                                  final user = await UserService.getCurrentUser();
+
+                                  if (user.id == product.sellerId.toString()) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('No puedes comprar tus propios productos')),
+                                    );
+                                    return;
+                                  }
+
+                                  CartService.addToCart(product);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('${product.name} agregado al carrito')),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                    title: Text(
-                      product.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text(product.price, style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.cyan)),
-                        Text(product.status, style: TextStyle(color: Colors.grey.shade600)),
-                      ],
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.add_shopping_cart, color: Colors.cyan),
-                      onPressed: () {},
-                    ),
-                  ),
+                      );
+                    }
+
                 );
               },
             ),
@@ -183,32 +214,38 @@ class _SellerScreenState extends State<SellerScreen> {
             context,
             MaterialPageRoute(
               builder: (context) => SellerChatScreen(
-                sellerName: widget.seller.name,
-                sellerImage: widget.seller.profileImage,
+                sellerName: seller.nombre,
+                sellerImage: 'assets/images/user/${seller.fotoPerfil}',
               ),
             ),
           );
         },
         backgroundColor: Colors.cyan,
-        child: const Icon(Icons.chat),
+        child: const Icon(Icons.chat, color: Colors.white),
       ),
     );
   }
 
-  // Add the missing _infoItem method
+  Color _getStatusColor(String? status) {
+    switch (status) {
+      case 'Disponible':
+        return Colors.green;
+      case 'Agotado':
+        return Colors.red;
+      case 'Próximamente':
+        return Colors.orange;
+      default:
+        return Colors.grey.shade600;
+    }
+  }
+
   Widget _infoItem(IconData icon, String value, String label) {
     return Column(
       children: [
         Icon(icon, color: Colors.cyan),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-        ),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
       ],
     );
   }

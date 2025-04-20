@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../services/cart_service.dart';
-import '../../services/seller_service.dart';
-import '../../services/order_service.dart';
+import '../../services/cart/cart_service.dart';
+import '../../services/seller/seller_service.dart';
+import '../../services/order/order_service.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
+import '../../widgets/product_image.dart';
 
 class CarScreen extends StatefulWidget {
   const CarScreen({super.key});
@@ -125,11 +126,11 @@ class _CarScreenState extends State<CarScreen> {
                           fontWeight: FontWeight.bold, fontSize: 18)),
                   const SizedBox(height: 8),
                   ...cartItems.map((item) => ListTile(
-                    leading: Image.asset(
-                      item.product.image,
+                    leading: ProductImage(
+                      imagePath: item.product.image.split('/').last,
                       width: 50,
                       height: 50,
-                      fit: BoxFit.cover,
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     title: Text(item.product.name),
                     subtitle: Text('\$${item.product.price.toStringAsFixed(2)}'),
@@ -162,25 +163,19 @@ class _CarScreenState extends State<CarScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      ElevatedButton.icon(
+                      TextButton.icon(
                         onPressed: () => _cancelarPedido(sellerId),
-                        icon: const Icon(Icons.cancel),
-                        label: const Text('Cancelar Pedido'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
+                        icon: const Icon(Icons.cancel, color: Colors.red),
+                        label: const Text('Cancelar Pedido', style: TextStyle(color: Colors.red)),
                       ),
                       const SizedBox(width: 8),
-                      ElevatedButton.icon(
+                      TextButton.icon(
                         onPressed: () => _enviarPedido(sellerId, cartItems),
-                        icon: const Icon(Icons.send),
-                        label: const Text('Solicitar Pedido'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                        ),
+                        icon: const Icon(Icons.send, color: Colors.green),
+                        label: const Text('Solicitar Pedido', style: TextStyle(color: Colors.green)),
                       ),
                     ],
-                  ),
+                  )
                 ],
               ),
             ),

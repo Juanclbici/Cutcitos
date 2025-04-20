@@ -31,7 +31,7 @@ class User {
       codigoUDG: json['codigo_UDG']?.toString() ?? 'N/A',
       estadoCuenta: json['estado_cuenta'] ?? 'activo',
       fotoPerfil: _parseProfileImage(json['foto_perfil']),
-      fechaRegistro: DateTime.tryParse(json['created_at'] ?? '') ?? DateTime.now(),
+      fechaRegistro: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
     );
   }
 

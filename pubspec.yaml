@@ -17,7 +17,7 @@ dependencies:
   intl_phone_field: ^3.2.0
   flutter_dotenv: ^5.1.0  # Versión más reciente
   http: ^1.2.0
-  flutter_secure_storage: ^8.0.0
+  flutter_secure_storage: ^9.0.0
 
   # Agrega estos paquetes útiles para autenticación:
   provider: ^6.1.1       # Para gestión de estado
@@ -35,16 +35,7 @@ flutter:
 
   assets:
     - assets/cutcitos.png
-    - assets/images/caramelos.jpg
-    - assets/images/chocolates.jpg
-    - assets/images/chocolates2.jpg
-    - assets/images/gomitas1.jpg
-    - assets/images/paletas.jpg
-    - assets/images/panditas.jpg
-    - assets/images/profile.jpg
-    - assets/images/default_profile.jpg
-    - assets/images/default_category.jpg
+    - assets/images/default/
+    - assets/images/user/
     - assets/images/products/
-    - assets/images/default-product.png
-    - assets/images/default_product.jpg
     - .env               # Incluye el archivo .env como asset
