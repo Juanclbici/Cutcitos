@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../models/product.dart';
 import '../../models/category.dart';
 import '../../services/product/product_service.dart';
 import '../../services/category/category_service.dart';
+import '../../services/cloudinary/cloudinary_service.dart';
 import '../../widgets/product_image.dart';
 import '../../widgets/user_cover.dart';
 
@@ -56,7 +56,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       _nameController.text = producto.name;
       _priceController.text = producto.price.toString();
       _descripcionController.text = producto.description ?? '';
-      _selectedImage = producto.image.split('/').last;
+      _selectedImage = producto.image;
       _selectedStatus = producto.status.toLowerCase();
       _categoriaSeleccionada = producto.categoryId;
     } else {
@@ -77,16 +77,15 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                GestureDetector(
-                  onTap: _seleccionarImagen,
-                  child: ProductImage(
+                if (_editingProduct != null) ...[
+                  ProductImage(
                     imagePath: _selectedImage,
                     width: 100,
                     height: 100,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                ],
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(labelText: 'Nombre'),
@@ -140,60 +139,54 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     );
   }
 
-  void _seleccionarImagen() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Seleccionar imagen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _opcionImagen('gomitas1.jpg'),
-            _opcionImagen('chocolates.jpg'),
-            _opcionImagen('cupcake.jpg'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _opcionImagen(String nombre) {
-    return ListTile(
-      leading: const Icon(Icons.image),
-      title: Text(nombre.split('.').first),
-      onTap: () {
-        setState(() {
-          _selectedImage = nombre;
-        });
-        Navigator.pop(context);
-      },
-    );
+  Future<void> _subirImagenDesdeGaleria() async {
+    final url = await CloudinaryService.subirImagenFirmada(folder: 'productos');
+    if (url != null) {
+      print('✅ Imagen subida: $url');
+      setState(() {
+        _selectedImage = url;
+      });
+    } else {
+      print('❌ No se subió imagen');
+    }
   }
 
   Future<void> _guardarProducto() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final data = {
-      'nombre': _nameController.text.trim(),
-      'precio': double.tryParse(_priceController.text) ?? 0.0,
-      'imagen': _selectedImage,
-      'estado_producto': _selectedStatus,
-      'descripcion': _descripcionController.text.trim(),
-      'cantidad_disponible': 10,
-      'categoria_id': _categoriaSeleccionada ?? 1,
-    };
-
-    Navigator.pop(context);
     setState(() => _loading = true);
 
     try {
+      if (!_selectedImage.startsWith('http') && _selectedImage != 'default_product.png') {
+        final url = await CloudinaryService.subirImagenFirmada(folder: 'productos');
+        if (url == null) {
+          _mostrarMensaje('❌ No se pudo subir la imagen');
+          setState(() => _loading = false);
+          return;
+        }
+        _selectedImage = url;
+      }
+
+      final data = {
+        'nombre': _nameController.text.trim(),
+        'precio': double.tryParse(_priceController.text) ?? 0.0,
+        'imagen': _selectedImage,
+        'estado_producto': _selectedStatus,
+        'descripcion': _descripcionController.text.trim(),
+        'cantidad_disponible': 10,
+        'categoria_id': _categoriaSeleccionada ?? 1,
+      };
+
+      Navigator.pop(context);
+
       if (_editingProduct == null) {
         await ProductService.createProduct(data);
-        _mostrarMensaje('Producto creado');
+        _mostrarMensaje('✅ Producto creado');
       } else {
         await ProductService.updateProduct(_editingProduct!.id, data);
-        _mostrarMensaje('Producto actualizado');
+        _mostrarMensaje('✅ Producto actualizado');
       }
+
       _refrescarProductos();
     } catch (e) {
       _mostrarMensaje('Error: $e');
@@ -225,6 +218,21 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         _mostrarMensaje('Error al eliminar: $e');
       } finally {
         setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<void> _cambiarImagenProducto(Product producto) async {
+    final nuevaUrl = await CloudinaryService.subirImagenFirmada(folder: 'productos');
+    if (nuevaUrl != null) {
+      try {
+        await ProductService.updateProduct(producto.id, {
+          'imagen': nuevaUrl,
+        });
+        _mostrarMensaje('✅ Imagen actualizada');
+        _refrescarProductos();
+      } catch (e) {
+        _mostrarMensaje('❌ Error al actualizar imagen: $e');
       }
     }
   }
@@ -304,11 +312,27 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                     return Card(
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       child: ListTile(
-                        leading: ProductImage(
-                          imagePath: p.image.split('/').last,
-                          width: 60,
-                          height: 60,
-                          borderRadius: BorderRadius.circular(8),
+                        leading: Stack(
+                          children: [
+                            ProductImage(
+                              imagePath: p.image,
+                              width: 60,
+                              height: 60,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () => _cambiarImagenProducto(p),
+                                child: const CircleAvatar(
+                                  radius: 10,
+                                  backgroundColor: Colors.black54,
+                                  child: Icon(Icons.edit, size: 12, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         title: Text(p.name),
                         subtitle: Column(
@@ -354,3 +378,4 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     }
   }
 }
+

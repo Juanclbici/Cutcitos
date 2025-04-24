@@ -96,6 +96,7 @@ class ProductService {
   }
   static Future<bool> updateProduct(int productId, Map<String, dynamic> productData) async {
     try {
+      print("📦 Datos que se enviarán al backend: $productData");
       final response = await ApiService.putWithBody('products/$productId', productData);
 
       if (response.statusCode == 200) {

@@ -13,30 +13,41 @@ class ProductImage extends StatelessWidget {
     this.width = 100,
     this.height = 100,
     this.borderRadius,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.contain,
   });
 
   @override
   Widget build(BuildContext context) {
-    final String finalPath = imagePath == 'default_product.png'
-        ? 'assets/images/default/default_product.png'
-        : 'assets/images/products/$imagePath';
+    final isNetworkImage = imagePath.startsWith('http');
+    final isDefault = imagePath.contains('default_product.png');
+    final String localPath = 'assets/images/default/default_product.png';
 
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
-      child: Image.asset(
-        finalPath,
+      child: isNetworkImage
+          ? Image.network(
+        imagePath,
         width: width,
         height: height,
         fit: fit,
-        errorBuilder: (_, __, ___) {
-          return Image.asset(
-            'assets/images/default/default_product.png',
-            width: width,
-            height: height,
-            fit: fit,
-          );
-        },
+        errorBuilder: (_, __, ___) => Image.asset(
+          localPath,
+          width: width,
+          height: height,
+          fit: fit,
+        ),
+      )
+          : Image.asset(
+        isDefault ? localPath : 'assets/images/products/$imagePath',
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (_, __, ___) => Image.asset(
+          localPath,
+          width: width,
+          height: height,
+          fit: fit,
+        ),
       ),
     );
   }

@@ -16,7 +16,6 @@ class InfoProfile extends StatefulWidget {
 class _InfoProfileState extends State<InfoProfile> {
   User? _user;
   bool _isLoading = true;
-  int _selectedIndex = 3;
 
   @override
   void initState() {
@@ -39,6 +38,20 @@ class _InfoProfileState extends State<InfoProfile> {
     }
   }
 
+  Future<void> _cambiarFotoPerfil() async {
+    final ok = await UserService.subirFotoPerfilFirmada();
+    if (ok) {
+      await _loadUserData();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto de perfil actualizada')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al actualizar imagen')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,30 +70,39 @@ class _InfoProfileState extends State<InfoProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Foto de perfil
-            UserImage(
-              imagePath: _user!.fotoPerfil,
-              width: 120,
-              height: 120,
-              borderRadius: BorderRadius.circular(60), // Para que se vea como un círculo
-              fit: BoxFit.cover,
+            Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                UserImage(
+                  imagePath: _user!.fotoPerfil,
+                  width: 120,
+                  height: 120,
+                  borderRadius: BorderRadius.circular(60),
+                  fit: BoxFit.cover,
+                ),
+                Positioned(
+                  child: InkWell(
+                    onTap: _cambiarFotoPerfil,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.cyan.shade700,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
-
-            // Nombre
             Text(
               _user!.nombre,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-
-            // Rol
             Container(
               margin: const EdgeInsets.symmetric(vertical: 8),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.cyan.shade100,
                 borderRadius: BorderRadius.circular(20),
@@ -93,8 +115,6 @@ class _InfoProfileState extends State<InfoProfile> {
                 ),
               ),
             ),
-
-            // Estado de cuenta
             Text(
               'Estado: ${_formatStatus(_user!.estadoCuenta)}',
               style: TextStyle(
@@ -104,31 +124,23 @@ class _InfoProfileState extends State<InfoProfile> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             const SizedBox(height: 32),
             const Divider(),
-
-            // Sección de información
             _sectionTitle('Información Personal', Icons.person),
             _infoCard('Email', _user!.email, Icons.email),
             _infoCard('Teléfono', _user!.telefono, Icons.phone),
             _infoCard('Código UDG', _user!.codigoUDG, Icons.school),
             _infoCard(
               'Fecha de registro',
-              DateFormat('dd/MM/yyyy')
-                  .format(_user!.fechaRegistro),
+              DateFormat('dd/MM/yyyy').format(_user!.fechaRegistro),
               Icons.calendar_today,
             ),
-
             const SizedBox(height: 24),
-
-            // Botón editar (placeholder)
             ElevatedButton.icon(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text(
-                        'Función de editar perfil en desarrollo'),
+                    content: Text('Función de editar perfil en desarrollo'),
                   ),
                 );
               },
@@ -137,8 +149,7 @@ class _InfoProfileState extends State<InfoProfile> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.cyan,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -178,21 +189,9 @@ class _InfoProfileState extends State<InfoProfile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.black54,
-                    ),
-                  ),
+                  Text(title, style: const TextStyle(fontSize: 14, color: Colors.black54)),
                   const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 ],
               ),
             ),

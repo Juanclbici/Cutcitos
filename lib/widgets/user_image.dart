@@ -18,14 +18,30 @@ class UserImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String finalPath = imagePath == 'default_profile.jpg'
+    final bool isNetworkImage = imagePath.startsWith('http');
+    final String localPath = imagePath == 'default_profile.jpg'
         ? 'assets/images/default/default_profile.jpg'
         : 'assets/images/user/$imagePath';
 
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
-      child: Image.asset(
-        finalPath,
+      child: isNetworkImage
+          ? Image.network(
+        imagePath,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (_, __, ___) {
+          return Image.asset(
+            'assets/images/default/default_profile.jpg',
+            width: width,
+            height: height,
+            fit: fit,
+          );
+        },
+      )
+          : Image.asset(
+        localPath,
         width: width,
         height: height,
         fit: fit,
