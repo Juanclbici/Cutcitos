@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Image.asset('assets/cutcitos.png', height: 150),
               const SizedBox(height: 20),
               const Text(
-                'Bienvenido',
+                'Bienvenid@',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -138,7 +138,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 7),
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
@@ -151,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             horizontal: 12, vertical: 16),
                       ),
                       validator: (value) =>
-                      value!.length < 8 ? 'Mínimo 8 caracteres' : null,
+                      value!.length < 7 ? 'Mínimo 7 caracteres' : null,
                     ),
                     const SizedBox(height: 30),
                     SizedBox(

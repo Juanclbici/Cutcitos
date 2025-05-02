@@ -78,6 +78,30 @@ class AuthService {
     return response.statusCode == 200;
   }
 
+  //validar el código de restablecimiento
+  Future<bool> verifyResetCode(String email, String code) async {
+    final response = await ApiService.post('auth/validate-reset-code', {
+      'email': email,
+      'code': code,
+      'npassword': 'temporal', // contraseña temporal para validar el código
+    });
+
+    return response.statusCode == 200;
+  }
+
+  // Cambiar la contraseña
+  Future<bool> updatePassword(String email, String code, String newPassword) async {
+    final response = await ApiService.post('auth/validate-reset-code', {
+      'email': email,
+      'code': code,
+      'npassword': newPassword,
+    });
+
+    return response.statusCode == 200;
+  }
+
+
+
   // 🚪 Cerrar sesión desde AuthProvider
   Future<void> logout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
