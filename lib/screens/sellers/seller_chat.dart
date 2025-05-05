@@ -1,86 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:palette_generator/palette_generator.dart';
-import '../../models/SellerData.dart';
+import '../../models/message.dart';
+import '../../services/message/message_service.dart';
+import '../../widgets/user_image.dart';
 
 class SellerChatScreen extends StatefulWidget {
   final String sellerName;
   final String sellerImage;
+  final int usuarioId;
 
   const SellerChatScreen({
     super.key,
     required this.sellerName,
     required this.sellerImage,
+    required this.usuarioId,
   });
 
   @override
   State<SellerChatScreen> createState() => _SellerChatScreenState();
 }
 
-class _SellerChatScreenState extends State<SellerChatScreen> {
+class _SellerChatScreenState extends State<SellerChatScreen> with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
-  final List<ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
-  Color _dominantColor = Colors.cyan;
+  List<Message> _messages = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _updatePaletteGenerator();
-  }
-
-  Future<void> _updatePaletteGenerator() async {
-    final PaletteGenerator paletteGenerator = await PaletteGenerator.fromImageProvider(
-      AssetImage(widget.sellerImage),
-      size: const Size(100, 100), // Small size for faster processing
-    );
-
-    setState(() {
-      _dominantColor = paletteGenerator.dominantColor?.color ??
-                      paletteGenerator.vibrantColor?.color ??
-                      Colors.cyan;
-    });
+    WidgetsBinding.instance.addObserver(this);
+    _loadMessages();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
-    setState(() {
-      _messages.add(
-        ChatMessage(
-          text: _messageController.text,
-          isMe: true,
-          time: DateTime.now(),
-        ),
-      );
-
-      // Simulate seller response after 1 second
-      Future.delayed(const Duration(seconds: 1), () {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              text: "Gracias por tu mensaje. ¿En qué puedo ayudarte?",
-              isMe: false,
-              time: DateTime.now(),
-            ),
-          );
-        });
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    if (bottomInset > 0.0) {
+      Future.delayed(const Duration(milliseconds: 100), () {
         _scrollToBottom();
       });
+    }
+  }
+
+  Future<void> _loadMessages() async {
+    try {
+      final msgs = await MessageService.getMessagesWith(widget.usuarioId);
+      setState(() {
+        _messages = msgs;
+        _isLoading = false;
+      });
+      _scrollToBottom();
+    } catch (e) {
+      print("Error al cargar mensajes: $e");
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    final success = await MessageService.sendMessage({
+      'mensaje': text,
+      'destinatario_id': widget.usuarioId,
     });
 
-    _messageController.clear();
-    _scrollToBottom();
+    if (success) {
+      _messageController.clear();
+      FocusScope.of(context).unfocus();
+      await _loadMessages();
+    }
   }
 
   void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -91,68 +92,82 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
     });
   }
 
+  String _resolverRutaImagen(String path) {
+    if (path.startsWith('http')) return path;
+    if (path.contains('assets/images/')) return path;
+    if (path == 'default_profile.jpg') return 'assets/images/default/default_profile.jpg';
+    return 'assets/images/user/$path';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: _dominantColor,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            CircleAvatar(
-              backgroundImage: AssetImage(widget.sellerImage),
-              radius: 20,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              widget.sellerName,
-              style: const TextStyle(color: Colors.white),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onPressed: () {},
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, true);
+        return false;
+      },
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          backgroundColor: Colors.cyan,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: _messages.isEmpty
-                ? const Center(
-                    child: Text(
-                      "Envía un mensaje para comenzar a chatear",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length,
-                    itemBuilder: (context, index) {
-                      return _buildMessage(_messages[index]);
-                    },
-                  ),
+          title: Row(
+            children: [
+              UserImage(
+                imagePath: _resolverRutaImagen(widget.sellerImage),
+                width: 40,
+                height: 40,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  widget.sellerName,
+                  style: const TextStyle(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          _buildMessageInput(),
-        ],
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _messages.isEmpty
+                    ? const Center(child: Text("No hay mensajes aún"))
+                    : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = _messages[index];
+                    final isMe = msg.remitenteId != widget.usuarioId;
+                    return _buildMessage(msg.mensaje, msg.fechaEnvio, isMe);
+                  },
+                ),
+              ),
+              _buildMessageInput(),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildMessage(ChatMessage message) {
+  Widget _buildMessage(String text, String fecha, bool isMe) {
     return Align(
-      alignment: message.isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: message.isMe ? Colors.cyan : Colors.grey.shade200,
+          color: isMe ? Colors.cyan : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(16),
         ),
         constraints: BoxConstraints(
@@ -162,17 +177,17 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              message.text,
+              text,
               style: TextStyle(
-                color: message.isMe ? Colors.white : Colors.black87,
+                color: isMe ? Colors.white : Colors.black87,
                 fontSize: 16,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              _formatTime(message.time),
+              fecha.split("T").last.substring(0, 5),
               style: TextStyle(
-                color: message.isMe ? Colors.white70 : Colors.black54,
+                color: isMe ? Colors.white70 : Colors.black54,
                 fontSize: 12,
               ),
             ),
@@ -182,32 +197,24 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
     );
   }
 
-  String _formatTime(DateTime time) {
-    return "${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}";
-  }
-
   Widget _buildMessageInput() {
     return Container(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, -1),
-          ),
+          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, -1))
         ],
       ),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.attach_file, color: Colors.grey),
-            onPressed: () {},
-          ),
           Expanded(
             child: TextField(
               controller: _messageController,
+              textCapitalization: TextCapitalization.sentences,
+              keyboardType: TextInputType.text,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _sendMessage(),
               decoration: InputDecoration(
                 hintText: "Escribe un mensaje...",
                 border: OutlineInputBorder(
@@ -216,16 +223,13 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
                 ),
                 filled: true,
                 fillColor: Colors.grey.shade100,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
             ),
           ),
           const SizedBox(width: 8),
           CircleAvatar(
-            backgroundColor: _dominantColor,
+            backgroundColor: Colors.cyan,
             child: IconButton(
               icon: const Icon(Icons.send, color: Colors.white),
               onPressed: _sendMessage,
@@ -236,4 +240,3 @@ class _SellerChatScreenState extends State<SellerChatScreen> {
     );
   }
 }
-

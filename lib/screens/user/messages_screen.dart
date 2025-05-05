@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../models/SellerData.dart';
-import 'info_profile.dart';
-import '../sellers/seller_chat.dart';
+import '../../services/message/message_service.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
+import '../../models/User.dart';
+import '../../widgets/user_image.dart';
+import '../sellers/seller_chat.dart';
 
-// First class - MessagesScreen
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
 
@@ -14,25 +14,50 @@ class MessagesScreen extends StatefulWidget {
 }
 
 class _MessagesScreenState extends State<MessagesScreen> {
-  final SellerData _sellerData = SellerData();
-  List<Seller> _sellers = [];
+  List<Map<String, dynamic>> _inbox = [];
   bool _isLoading = true;
-  int _selectedIndex = 1; // Set to 1 for Messages tab
+  int _selectedIndex = 1;
 
   @override
   void initState() {
     super.initState();
-    _loadSellers();
+    _loadInbox();
   }
 
-  Future<void> _loadSellers() async {
+  Future<void> _loadInbox() async {
     try {
-      final sellers = await _sellerData.getSellers();
+      final inboxData = await MessageService.getInbox();
+      final usuarios = await MessageService.getAllUsers();
+
+      final enrichedInbox = inboxData.map((item) {
+        final user = usuarios.firstWhere(
+              (u) => u.id == item['usuario_id'].toString(),
+          orElse: () => User(
+            id: item['usuario_id'].toString(),
+            nombre: 'Desconocido',
+            email: '',
+            rol: 'usuario',
+            telefono: '',
+            codigoUDG: '',
+            estadoCuenta: '',
+            fotoPerfil: 'assets/images/default/default_profile.jpg',
+            fechaRegistro: DateTime.now(),
+          ),
+        );
+
+        return {
+          ...item,
+          'nombre': user.nombre,
+          'foto': user.fotoPerfil,
+        };
+      }).toList();
+
       setState(() {
-        _sellers = sellers;
+        _inbox = enrichedInbox;
         _isLoading = false;
       });
     } catch (e) {
+      print("Error cargando inbox: $e");
       setState(() {
         _isLoading = false;
       });
@@ -43,55 +68,71 @@ class _MessagesScreenState extends State<MessagesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mensajes"),
+        title: const Text("Bandeja de Entrada"),
         backgroundColor: Colors.cyan,
         automaticallyImplyLeading: true,
       ),
       drawer: const CustomDrawer(),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
+          : _inbox.isEmpty
+          ? const Center(child: Text("No tienes conversaciones aún"))
           : ListView.builder(
-        itemCount: _sellers.length,
+        itemCount: _inbox.length,
         itemBuilder: (context, index) {
-          final seller = _sellers[index];
-          // Mock last message
-          final lastMessage = "Hola, ¿cómo estás?";
-          final lastMessageTime = "12:30 PM";
+          final item = _inbox[index];
+          final usuarioId = item['usuario_id'];
+          final mensaje = item['ultimo_mensaje'] ?? '';
+          final fecha = item['fecha'] ?? '';
+          final noLeido = item['no_leido'] ?? false;
+          final nombre = item['nombre'] ?? 'Usuario';
+          final foto = item['foto'] ?? 'assets/images/default/default_profile.jpg';
 
           return ListTile(
-            leading: CircleAvatar(
-              backgroundImage: AssetImage(seller.profileImage),
-              radius: 25,
+            leading: UserImage(
+              imagePath: foto,
+              width: 50,
+              height: 50,
+              borderRadius: BorderRadius.circular(25),
             ),
             title: Text(
-              seller.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
+              nombre,
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
-              lastMessage,
+              mensaje,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: Text(
-              lastMessageTime,
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-              ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  fecha.toString().split('T').first,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+                if (noLeido)
+                  const Icon(Icons.mark_chat_unread, color: Colors.redAccent, size: 18),
+              ],
             ),
-            onTap: () {
-              // Navigate to chat detail screen
-              Navigator.push(
+            onTap: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => SellerChatScreen(
-                sellerName: seller.name,
-                sellerImage: seller.profileImage,
+                    sellerName: nombre,
+                    sellerImage: foto,
+                    usuarioId: usuarioId,
+                  ),
                 ),
-              ),
               );
+
+              if (result == true) {
+                _loadInbox();
+              }
             },
           );
         },

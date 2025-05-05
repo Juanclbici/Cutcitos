@@ -214,8 +214,9 @@ class _SellerScreenState extends State<SellerScreen> {
             context,
             MaterialPageRoute(
               builder: (context) => SellerChatScreen(
-                sellerName: seller.nombre,
-                sellerImage: 'assets/images/user/${seller.fotoPerfil}',
+                sellerName: widget.seller.nombre,
+                sellerImage: widget.seller.fotoPerfil,
+                usuarioId: widget.seller.id,
               ),
             ),
           );
@@ -223,6 +224,7 @@ class _SellerScreenState extends State<SellerScreen> {
         backgroundColor: Colors.cyan,
         child: const Icon(Icons.chat, color: Colors.white),
       ),
+
     );
   }
 

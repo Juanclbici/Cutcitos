@@ -16,44 +16,48 @@ class UserImage extends StatelessWidget {
     this.fit = BoxFit.cover,
   });
 
+  bool _isNetworkImage(String path) => path.startsWith('http');
+  bool _isAssetPath(String path) => path.startsWith('assets/');
+
   @override
   Widget build(BuildContext context) {
-    final bool isNetworkImage = imagePath.startsWith('http');
-    final String localPath = imagePath == 'default_profile.jpg'
-        ? 'assets/images/default/default_profile.jpg'
-        : 'assets/images/user/$imagePath';
+    final bool isNetwork = _isNetworkImage(imagePath);
+    final String resolvedPath = isNetwork
+        ? imagePath
+        : (_isAssetPath(imagePath)
+        ? imagePath
+        : 'assets/images/user/$imagePath');
 
     return ClipRRect(
       borderRadius: borderRadius ?? BorderRadius.circular(8),
-      child: isNetworkImage
+      child: isNetwork
           ? Image.network(
-        imagePath,
+        resolvedPath,
         width: width,
         height: height,
         fit: fit,
         errorBuilder: (_, __, ___) {
-          return Image.asset(
-            'assets/images/default/default_profile.jpg',
-            width: width,
-            height: height,
-            fit: fit,
-          );
+          return _defaultImage();
         },
       )
           : Image.asset(
-        localPath,
+        resolvedPath,
         width: width,
         height: height,
         fit: fit,
         errorBuilder: (_, __, ___) {
-          return Image.asset(
-            'assets/images/default/default_profile.jpg',
-            width: width,
-            height: height,
-            fit: fit,
-          );
+          return _defaultImage();
         },
       ),
+    );
+  }
+
+  Widget _defaultImage() {
+    return Image.asset(
+      'assets/images/default/default_profile.jpg',
+      width: width,
+      height: height,
+      fit: fit,
     );
   }
 }
