@@ -5,6 +5,7 @@ import '../../widgets/status_chip.dart';
 import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
 import '../../widgets/product_image.dart';
+import '../sellers/seller_chat.dart';
 
 class VendorOrdersScreen extends StatefulWidget {
   const VendorOrdersScreen({super.key});
@@ -64,25 +65,22 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
 
   List<Order> _filterOrders(String categoria) {
     List<Order> filtrados = switch (categoria) {
-      'pendiente' => _allOrders
-          .where((o) => o.estado == 'pendiente' || o.estado == 'confirmado')
-          .toList(),
+      'pendiente' => _allOrders.where((o) => o.estado == 'pendiente' || o.estado == 'confirmado').toList(),
       'entregado' => _allOrders.where((o) => o.estado == 'entregado').toList(),
       'cancelado' => _allOrders.where((o) => o.estado == 'cancelado').toList(),
       _ => []
     };
 
     if (_fechaSeleccionada != null) {
-      filtrados = filtrados.where((o) {
-        return o.fecha.year == _fechaSeleccionada!.year &&
-            o.fecha.month == _fechaSeleccionada!.month &&
-            o.fecha.day == _fechaSeleccionada!.day;
-      }).toList();
+      filtrados = filtrados.where((o) =>
+      o.fecha.year == _fechaSeleccionada!.year &&
+          o.fecha.month == _fechaSeleccionada!.month &&
+          o.fecha.day == _fechaSeleccionada!.day
+      ).toList();
     }
 
     return filtrados;
   }
-
 
   Future<void> _confirmarPedido(int orderId) async {
     final success = await OrderService.confirmOrderByVendor(orderId);
@@ -96,12 +94,8 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
         title: const Text('¿Marcar como entregado?'),
         content: const Text('¿Estás seguro de que este pedido ha sido entregado?'),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Sí, entregar')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sí, entregar')),
         ],
       ),
     );
@@ -159,7 +153,6 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
               onPressed: () => setState(() => _fechaSeleccionada = null),
             ),
         ],
-
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -176,13 +169,14 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
         controller: _tabController,
         children: categorias.map((categoria) {
           final pedidos = _filterOrders(categoria);
+          final esPendiente = categoria == 'pendiente';
+
           return pedidos.isEmpty
               ? const Center(child: Text('No hay pedidos en esta categoría'))
               : ListView.builder(
             itemCount: pedidos.length,
             itemBuilder: (context, index) {
               final pedido = pedidos[index];
-              final estado = pedido.estado;
 
               return Card(
                 margin: const EdgeInsets.all(10),
@@ -194,31 +188,22 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
                     children: [
                       Row(
                         children: [
-                          Text(
-                            'Pedido #${pedido.id}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16),
-                          ),
+                          Text('Pedido #${pedido.id}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           const Spacer(),
                           StatusChip(estado: pedido.estado),
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Fecha: ${_formatearFecha(pedido.fecha)}',
-                        style: const TextStyle(fontSize: 13, color: Colors.grey),
-                      ),
-                      Text(
-                        'Comprador: ${pedido.compradorNombre ?? 'Desconocido'}',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
+                      Text('Fecha: ${_formatearFecha(pedido.fecha)}',
+                          style: const TextStyle(fontSize: 13, color: Colors.grey)),
+                      Text('Comprador: ${pedido.compradorNombre ?? 'Desconocido'}',
+                          style: const TextStyle(color: Colors.grey)),
                       const SizedBox(height: 6),
                       ...pedido.productos.map((producto) => Container(
                         margin: const EdgeInsets.symmetric(vertical: 4),
                         decoration: BoxDecoration(
-                          border: Border.all(
-                              color: Colors.grey.shade300),
+                          border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: ListTile(
@@ -229,65 +214,68 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen>
                             borderRadius: BorderRadius.circular(8),
                           ),
                           title: Text(producto.name),
-                          subtitle: Text(
-                              'Cantidad solicitada: ${producto.cantidadSolicitada ?? 'N/A'}'),
-                          trailing: Text(
-                              '\$${producto.price.toStringAsFixed(2)}'),
+                          subtitle: Text('Cantidad: ${producto.cantidadSolicitada ?? 'N/A'}'),
+                          trailing: Text('\$${producto.price.toStringAsFixed(2)}'),
                         ),
                       )),
                       const SizedBox(height: 6),
                       Align(
                         alignment: Alignment.centerRight,
-                        child: Text(
-                          'Total: \$${pedido.total.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16),
-                        ),
+                        child: Text('Total: \$${pedido.total.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       ),
                       const SizedBox(height: 10),
-                      if (estado == 'pendiente')
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (pedido.estado == 'pendiente') ...[
                             ElevatedButton.icon(
-                              onPressed: () =>
-                                  _confirmarPedido(pedido.id),
+                              onPressed: () => _confirmarPedido(pedido.id),
                               icon: const Icon(Icons.check),
                               label: const Text('Confirmar'),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             TextButton.icon(
-                              onPressed: () =>
-                                  _cancelarPedido(pedido.id),
+                              onPressed: () => _cancelarPedido(pedido.id),
                               icon: const Icon(Icons.cancel),
                               label: const Text('Cancelar'),
-                              style: TextButton.styleFrom(
-                                  foregroundColor: Colors.red),
+                              style: TextButton.styleFrom(foregroundColor: Colors.red),
                             ),
+                            const SizedBox(width: 8),
+                            FloatingActionButton.small(
+                              heroTag: 'chat_buyer_${pedido.id}',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SellerChatScreen(
+                                      sellerName: pedido.compradorNombre ?? 'Comprador',
+                                      usuarioId: pedido.userId ?? 0,
+                                      sellerImage: 'default_profile.jpg',
+                                    ),
+                                  ),
+                                );
+                              },
+                              backgroundColor: Colors.cyan,
+                              child: const Icon(Icons.message, color: Colors.white),
+                            )
                           ],
-                        )
-                      else if (estado == 'confirmado')
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
+                          if (pedido.estado == 'confirmado') ...[
                             ElevatedButton.icon(
-                              onPressed: () =>
-                                  _entregarPedido(pedido.id),
+                              onPressed: () => _entregarPedido(pedido.id),
                               icon: const Icon(Icons.local_shipping),
                               label: const Text('Entregar'),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
                             TextButton.icon(
-                              onPressed: () =>
-                                  _cancelarPedido(pedido.id),
+                              onPressed: () => _cancelarPedido(pedido.id),
                               icon: const Icon(Icons.cancel),
                               label: const Text('Cancelar'),
-                              style: TextButton.styleFrom(
-                                  foregroundColor: Colors.red),
+                              style: TextButton.styleFrom(foregroundColor: Colors.red),
                             ),
-                          ],
-                        ),
+                          ]
+                        ],
+                      ),
                     ],
                   ),
                 ),

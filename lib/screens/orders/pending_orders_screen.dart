@@ -6,6 +6,7 @@ import '../../widgets/custom_navbar.dart';
 import '../../widgets/custom_drawer.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/product_image.dart';
+import '../sellers/seller_chat.dart';
 
 class PendingOrdersScreen extends StatefulWidget {
   const PendingOrdersScreen({super.key});
@@ -20,23 +21,13 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
   List<Order> _allOrders = [];
   bool _isLoading = true;
   int _selectedIndex = 3;
-  bool _esVendedor = false;
   DateTime? _fechaSeleccionada;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _verificarRol();
     _loadOrders();
-  }
-
-  Future<void> _verificarRol() async {
-    final prefs = await SharedPreferences.getInstance();
-    final rol = prefs.getString('rol') ?? '';
-    setState(() {
-      _esVendedor = rol.toLowerCase() == 'vendedor';
-    });
   }
 
   Future<void> _loadOrders() async {
@@ -154,6 +145,8 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
         controller: _tabController,
         children: tabs.map((estado) {
           final pedidos = _filterOrders(estado);
+          final esPendiente = estado == 'pendiente';
+
           return pedidos.isEmpty
               ? const Center(child: Text('No hay pedidos'))
               : ListView.builder(
@@ -196,11 +189,9 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                           height: 50,
                           borderRadius: BorderRadius.circular(8),
                         ),
-
                         title: Text(producto.name),
                         subtitle: Text('Cantidad: ${producto.cantidadSolicitada}'),
-                        trailing:
-                        Text('\$${producto.price.toStringAsFixed(2)}'),
+                        trailing: Text('\$${producto.price.toStringAsFixed(2)}'),
                       )),
                       const SizedBox(height: 6),
                       Align(
@@ -213,16 +204,39 @@ class _PendingOrdersScreenState extends State<PendingOrdersScreen>
                           ),
                         ),
                       ),
-                      if (esCancelable)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: () => _cancelarPedido(pedido.id),
-                            icon: const Icon(Icons.cancel, color: Colors.red),
-                            label: const Text('Cancelar pedido',
-                                style: TextStyle(color: Colors.red)),
-                          ),
-                        )
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (esCancelable)
+                            TextButton.icon(
+                              onPressed: () => _cancelarPedido(pedido.id),
+                              icon: const Icon(Icons.cancel, color: Colors.red),
+                              label: const Text('Cancelar pedido',
+                                  style: TextStyle(color: Colors.red)),
+                            ),
+                          if (esPendiente)
+                            const SizedBox(width: 8),
+                          if (esPendiente)
+                            FloatingActionButton.small(
+                              heroTag: 'chat_${pedido.id}',
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SellerChatScreen(
+                                      sellerName: pedido.vendedorNombre ?? 'Vendedor',
+                                      usuarioId: pedido.vendedorId ?? 0,
+                                      sellerImage: 'default_profile.jpg', // requerido
+                                    ),
+                                  ),
+                                );
+                              },
+                              backgroundColor: Colors.cyan,
+                              child: const Icon(Icons.chat, color: Colors.white),
+                            ),
+                        ],
+                      )
                     ],
                   ),
                 ),

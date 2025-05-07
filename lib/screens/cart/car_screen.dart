@@ -56,7 +56,7 @@ class _CarScreenState extends State<CarScreen> {
 
     if (orderId != null) {
       setState(() {
-        CartService.removeSellerFromCart(sellerId); // 👈 Se elimina visualmente
+        CartService.removeSellerFromCart(sellerId);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Pedido enviado al vendedor ${sellerNames[sellerId]}')),
@@ -121,13 +121,17 @@ class _CarScreenState extends State<CarScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Vendedor: $nombreVendedor',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text(
+                    'Vendedor: $nombreVendedor',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   ...cartItems.map((item) => ListTile(
                     leading: ProductImage(
-                      imagePath: item.product.image.split('/').last,
+                      imagePath: item.product.image,
                       width: 50,
                       height: 50,
                       borderRadius: BorderRadius.circular(8),
@@ -166,13 +170,15 @@ class _CarScreenState extends State<CarScreen> {
                       TextButton.icon(
                         onPressed: () => _cancelarPedido(sellerId),
                         icon: const Icon(Icons.cancel, color: Colors.red),
-                        label: const Text('Cancelar Pedido', style: TextStyle(color: Colors.red)),
+                        label: const Text('Cancelar Pedido',
+                            style: TextStyle(color: Colors.red)),
                       ),
                       const SizedBox(width: 8),
                       TextButton.icon(
                         onPressed: () => _enviarPedido(sellerId, cartItems),
                         icon: const Icon(Icons.send, color: Colors.green),
-                        label: const Text('Solicitar Pedido', style: TextStyle(color: Colors.green)),
+                        label: const Text('Solicitar Pedido',
+                            style: TextStyle(color: Colors.green)),
                       ),
                     ],
                   )
